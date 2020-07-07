@@ -25,7 +25,7 @@ const (
 // ProbeOptions contains data and options required for doing healthcheck
 type ProbeOptions struct {
 	successMsg   string
-	Service      *micros.Service
+	Service      *micro.Service
 	AutoMigrator func() error
 	Type         string
 }
