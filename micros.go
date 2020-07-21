@@ -355,7 +355,7 @@ func (service *Service) RediSearchClient() *redisearch.Client {
 
 // DialExternalService dials to an external service
 func (service *Service) DialExternalService(
-	ctx context.Context, serviceName string, dialOptions []grpc.DialOption,
+	ctx context.Context, serviceName string, dialOptions ...grpc.DialOption,
 ) (*grpc.ClientConn, error) {
 	serviceInfo, err := service.Config().ExternalServiceByName(serviceName)
 	if err != nil {
@@ -379,7 +379,7 @@ func (service *Service) DialExternalService(
 		Address:     serviceInfo.Address(),
 		K8Service:   serviceInfo.K8Service(),
 		Insecure:    serviceInfo.Insecure(),
-		DialOptions: dialOptions,
+		DialOptions: dopts,
 	})
 }
 
