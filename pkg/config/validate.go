@@ -73,9 +73,9 @@ func (cfg *config) validate() error {
 		switch {
 		case strings.TrimSpace(srv.Name) == "":
 			return errors.New("service name is required")
-		case strings.TrimSpace(srv.ServerName) == "":
+		case strings.TrimSpace(srv.ServerName) == "" && !srv.Insecure:
 			return fmt.Errorf("service %s tls server name is required", strings.ToLower(srv.Name))
-		case strings.TrimSpace(srv.TLSCertFile) == "":
+		case strings.TrimSpace(srv.TLSCertFile) == "" && !srv.Insecure:
 			return fmt.Errorf("service %s tls cert is required", strings.ToLower(srv.Name))
 		}
 		if strings.TrimSpace(srv.Address) == "" {
