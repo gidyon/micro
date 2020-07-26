@@ -28,13 +28,13 @@ func handleErr(err error) {
 	}
 }
 
-// Start starts a http2 server that multiplexes gRPC and HTTP requests on the same port.
+// Start starts a grpc server and a http server that proxies requests to the grpc server.
 func (service *Service) Start(ctx context.Context, initFn func() error) {
-	// Bootstrap service grpc
+	// Bootstraps grpc server and client
 	handleErr(service.initGRPC(ctx))
 	// Execute init
 	handleErr(initFn())
-	// Start http server for both grpc and RaESTful API
+	// Start servers
 	handleErr(service.run(ctx))
 }
 
@@ -45,7 +45,13 @@ func (service *Service) run(ctx context.Context) error {
 
 	handler := http_middleware.Apply(service.Handler(), service.httpMiddlewares...)
 
-	ghandler := grpcHandlerFunc(service.GRPCServer(), handler)
+	var ghandler http.Handler
+
+	if service.cfg.ServiceTLSEnabled() {
+		ghandler = grpcHandlerFunc(service.GRPCServer(), handler)
+	} else {
+		ghandler = handler
+	}
 
 	httpServer := &http.Server{
 		Addr:              fmt.Sprintf(":%d", service.cfg.ServicePort()),
@@ -67,38 +73,49 @@ func (service *Service) run(ctx context.Context) error {
 		}
 	}()
 
-	// Create TCP listener
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", service.cfg.ServicePort()))
 	if err != nil {
-		return errors.Wrap(err, "failed to create TCP listener")
+		return errors.Wrap(err, "failed to create TCP listener for http server")
 	}
 	defer lis.Close()
 
 	logMsgFn := func() {
 		secureMsg := "secure"
+		grpcPortMsg := ""
 		if !service.cfg.ServiceTLSEnabled() {
 			secureMsg = "insecure"
+			grpcPortMsg = "8080(insecure-grpc) and"
 		}
 		service.logger.Infof(
-			"<gRPC and REST> server for service running on port: %d (%s)", service.cfg.ServicePort(), secureMsg,
+			"<gRPC and REST> servers for service running on port %s %d(%s)",
+			grpcPortMsg, service.cfg.ServicePort(), secureMsg,
 		)
 	}
 
 	logMsgFn()
 
 	if !service.cfg.ServiceTLSEnabled() {
+		glis, err := net.Listen("tcp", ":8080")
+		if err != nil {
+			return errors.Wrap(err, "failed to create TCP listener for gRPC server")
+		}
+		defer glis.Close()
+
+		// Serve grpc insecurely
+		go service.gRPCServer.Serve(glis)
+
+		// Serve http insecurely
 		return httpServer.Serve(lis)
 	}
 
+	// Server http securely
 	return httpServer.ServeTLS(lis, service.Config().ServiceTLSCertFile(), service.Config().ServiceTLSKeyFile())
 }
 
 // grpcHandlerFunc returns an http.Handler that delegates to grpcServer on incoming gRPC
-// connections or otherHandler otherwise. Copied from cockroachdb.
+// connections or otherHandler otherwise.
 func grpcHandlerFunc(grpcServer *grpc.Server, otherHandler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// TODO(tamird): point to merged gRPC code rather than a PR.
-		// This is a partial recreation of gRPC's internal checks https://github.com/grpc/grpc-go/pull/514/files#diff-95e9a25b738459a2d3030e1e6fa2a718R61
 		if r.ProtoMajor == 2 && strings.Contains(r.Header.Get("Content-Type"), "application/grpc") {
 			grpcServer.ServeHTTP(w, r)
 		} else {
@@ -108,8 +125,8 @@ func grpcHandlerFunc(grpcServer *grpc.Server, otherHandler http.Handler) http.Ha
 }
 
 // initGRPC initialize gRPC server and client with registered client and server interceptors and options.
-// The method must be called before registering anything on the gRPC server or gRPC client connection.
-// When this method has been called, subsequent calls to add interceptors and/or options will not update the service internals
+// The method must be called before registering anything on the gRPC server or passing options to the gRPC client.
+// When this method has been called, subsequent calls to update interceptors becomes stale.
 func (service *Service) initGRPC(ctx context.Context) error {
 	// ============================= Initialize runtime mux =============================
 	if service.runtimeMuxEndpoint == "" {
@@ -133,15 +150,22 @@ func (service *Service) initGRPC(ctx context.Context) error {
 	)
 
 	// ============================= Initialize grpc proxy client =============================
-	var err error
+	var (
+		gPort int
+		err   error
+	)
 	if service.cfg.ServiceTLSEnabled() {
-		creds, err := credentials.NewClientTLSFromFile(service.cfg.ServiceTLSCertFile(), service.cfg.ServiceTLSServerName())
+		creds, err := credentials.NewClientTLSFromFile(
+			service.cfg.ServiceTLSCertFile(), service.cfg.ServiceTLSServerName())
 		if err != nil {
-			return errors.Wrapf(err, "failed to create tls config for %s service", service.cfg.ServiceTLSServerName())
+			return errors.Wrapf(err,
+				"failed to create tls config for %s service", service.cfg.ServiceTLSServerName())
 		}
 		service.dialOptions = append(service.dialOptions, grpc.WithTransportCredentials(creds))
+		gPort = service.cfg.ServicePort()
 	} else {
 		service.dialOptions = append(service.dialOptions, grpc.WithInsecure())
+		gPort = 8080 // for grpc
 	}
 
 	// Enable wait for ready RPCs
@@ -181,7 +205,7 @@ func (service *Service) initGRPC(ctx context.Context) error {
 	// client connection to the reverse gateway
 	service.clientConn, err = conn.DialService(context.Background(), &conn.GRPCDialOptions{
 		ServiceName: "self",
-		Address:     fmt.Sprintf("localhost:%d", service.cfg.ServicePort()),
+		Address:     fmt.Sprintf("localhost:%d", gPort),
 		DialOptions: service.dialOptions,
 		K8Service:   false,
 	})
@@ -190,11 +214,12 @@ func (service *Service) initGRPC(ctx context.Context) error {
 	}
 
 	// ============================= Initialize grpc server =============================
-	// Add transport credentials if secure
+	// Add transport credentials if secure option is passed
 	if service.cfg.ServiceTLSEnabled() {
-		creds, err := credentials.NewServerTLSFromFile(service.cfg.ServiceTLSCertFile(), service.cfg.ServiceTLSKeyFile())
+		creds, err := credentials.NewServerTLSFromFile(
+			service.cfg.ServiceTLSCertFile(), service.cfg.ServiceTLSKeyFile())
 		if err != nil {
-			return fmt.Errorf("failed to create tls credentials: %v", err)
+			return fmt.Errorf("failed to create grpc server tls credentials: %v", err)
 		}
 		service.serverOptions = append(
 			service.serverOptions, grpc.Creds(creds),
