@@ -56,7 +56,6 @@ func NewService(ctx context.Context, cfg *config.Config, grpcLogger grpclog.Logg
 		return nil, errors.New("nil config not allowed")
 	}
 
-	// Sleep if startup sleep is enabled
 	if cfg.StartupSleepSeconds() > 0 {
 		time.Sleep(time.Duration(cfg.StartupSleepSeconds()) * time.Second)
 	}
@@ -378,7 +377,6 @@ func (service *Service) DialExternalService(
 		ServiceName: serviceInfo.Name(),
 		Address:     serviceInfo.Address(),
 		K8Service:   serviceInfo.K8Service(),
-		Insecure:    serviceInfo.Insecure(),
 		DialOptions: dopts,
 	})
 }
