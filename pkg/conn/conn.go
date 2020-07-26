@@ -120,7 +120,6 @@ type GRPCDialOptions struct {
 	Address     string
 	DialOptions []grpc.DialOption
 	K8Service   bool
-	Insecure    bool
 }
 
 // DialService dials to a remote service returning the underlying grpc connection
