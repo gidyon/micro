@@ -66,8 +66,9 @@ func (service *Service) run(ctx context.Context) error {
 	signal.Notify(c, os.Interrupt)
 	go func() {
 		for range c {
-			service.logger.Warning("shutting service...")
+			service.logger.Warning("shutting down service ...")
 			httpServer.Shutdown(ctx)
+			service.gRPCServer.Stop()
 
 			<-ctx.Done()
 		}
@@ -80,16 +81,17 @@ func (service *Service) run(ctx context.Context) error {
 	defer lis.Close()
 
 	logMsgFn := func() {
-		secureMsg := "secure"
-		grpcPortMsg := ""
 		if !service.cfg.ServiceTLSEnabled() {
-			secureMsg = "insecure"
-			grpcPortMsg = "8080(insecure-grpc) and"
+			service.logger.Infof(
+				"<GRPC> running on port 8080 (insecure), <REST> server running on port %d (insecure)",
+				service.cfg.ServicePort(),
+			)
+		} else {
+			service.logger.Infof(
+				"<gRPC> and <REST> server running on same port %d (secure)",
+				service.cfg.ServicePort(),
+			)
 		}
-		service.logger.Infof(
-			"<gRPC and REST> servers for service running on port %s %d(%s)",
-			grpcPortMsg, service.cfg.ServicePort(), secureMsg,
-		)
 	}
 
 	logMsgFn()
