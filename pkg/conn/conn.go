@@ -79,14 +79,16 @@ func ToSQLDBUsingORM(opt *DBOptions) (*gorm.DB, error) {
 		return nil, err
 	}
 
-	if opt.ConnPool.MaxIdleConns != 0 {
-		sqlDB.SetMaxIdleConns(opt.ConnPool.MaxIdleConns)
-	}
-	if opt.ConnPool.MaxOpenConns != 0 {
-		sqlDB.SetMaxOpenConns(opt.ConnPool.MaxOpenConns)
-	}
-	if opt.ConnPool.MaxLifetime != 0 {
-		sqlDB.SetConnMaxLifetime(opt.ConnPool.MaxLifetime)
+	if opt.ConnPool != nil {
+		if opt.ConnPool.MaxIdleConns != 0 {
+			sqlDB.SetMaxIdleConns(opt.ConnPool.MaxIdleConns)
+		}
+		if opt.ConnPool.MaxOpenConns != 0 {
+			sqlDB.SetMaxOpenConns(opt.ConnPool.MaxOpenConns)
+		}
+		if opt.ConnPool.MaxLifetime != 0 {
+			sqlDB.SetConnMaxLifetime(opt.ConnPool.MaxLifetime)
+		}
 	}
 
 	return db, nil
