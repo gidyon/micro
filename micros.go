@@ -3,7 +3,6 @@ package micro
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"strings"
 	"time"
 
@@ -12,10 +11,10 @@ import (
 	"github.com/gidyon/micro/pkg/conn"
 	http_middleware "github.com/gidyon/micro/pkg/http"
 	"github.com/go-redis/redis"
-	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/grpclog"
+	"gorm.io/gorm"
 
 	"net/http"
 
@@ -30,6 +29,7 @@ type Service struct {
 	logger                   grpclog.LoggerV2
 	gormDB                   *gorm.DB // uses gorm
 	sqlDB                    *sql.DB  // uses database/sql driver
+	dbPoolOptions            *conn.DBConnPoolOptions
 	redisClient              *redis.Client
 	rediSearchClient         *redisearch.Client
 	runtimeMuxEndpoint       string
@@ -46,7 +46,7 @@ type Service struct {
 	dialOptions              []grpc.DialOption
 	unaryClientInterceptors  []grpc.UnaryClientInterceptor
 	streamClientInterceptors []grpc.StreamClientInterceptor
-	shutdown                 func()
+	shutdowns                []func()
 }
 
 // NewService create a micro-service utility store by parsing data from config. Pass nil logger to use default logger
@@ -60,16 +60,7 @@ func NewService(ctx context.Context, cfg *config.Config, grpcLogger grpclog.Logg
 		time.Sleep(time.Duration(cfg.StartupSleepSeconds()) * time.Second)
 	}
 
-	var (
-		err              error
-		gormDB           *gorm.DB
-		sqlDB            *sql.DB
-		redisClient      *redis.Client
-		rediSearchClient *redisearch.Client
-		externalServices = make(map[string]*grpc.ClientConn)
-		logger           grpclog.LoggerV2
-		cleanup          = make([]func(), 0)
-	)
+	var logger grpclog.LoggerV2
 
 	if grpcLogger != nil {
 		logger = grpcLogger
@@ -77,114 +68,12 @@ func NewService(ctx context.Context, cfg *config.Config, grpcLogger grpclog.Logg
 		logger = NewLogger(cfg.ServiceName())
 	}
 
-	if cfg.UseSQLDatabase() {
-		sqlDBInfo := cfg.SQLDatabase()
-		if sqlDBInfo.UseGorm() {
-			// Create a *sql.DB instance
-			gormDB, err = conn.ToSQLDBUsingORM(&conn.DBOptions{
-				Dialect:  sqlDBInfo.SQLDatabaseDialect(),
-				Host:     sqlDBInfo.Host(),
-				Port:     fmt.Sprintf("%d", sqlDBInfo.Port()),
-				User:     sqlDBInfo.User(),
-				Password: sqlDBInfo.Password(),
-				Schema:   sqlDBInfo.Schema(),
-			})
-			if err != nil {
-				return nil, err
-			}
-			sqlDB = nil
-
-			cleanup = append(cleanup, func() {
-				gormDB.Close()
-			})
-
-		} else {
-			// Create a *sql.DB instance
-			sqlDB, err = conn.ToSQLDB(&conn.DBOptions{
-				Dialect:  sqlDBInfo.SQLDatabaseDialect(),
-				Host:     sqlDBInfo.Host(),
-				Port:     fmt.Sprintf("%d", sqlDBInfo.Port()),
-				User:     sqlDBInfo.User(),
-				Password: sqlDBInfo.Password(),
-				Schema:   sqlDBInfo.Schema(),
-			})
-			if err != nil {
-				return nil, err
-			}
-			gormDB = nil
-
-			cleanup = append(cleanup, func() {
-				sqlDB.Close()
-			})
-		}
-	}
-
-	if cfg.UseRedis() {
-		redisDBInfo := cfg.RedisDatabase()
-
-		// Creates a redis client
-		redisClient = conn.NewRedisClient(&conn.RedisOptions{
-			Address: redisDBInfo.Host(),
-			Port:    fmt.Sprintf("%d", redisDBInfo.Port()),
-		})
-
-		cleanup = append(cleanup, func() {
-			redisClient.Close()
-		})
-
-		if cfg.UseRediSearch() {
-			// Create a redisearch client
-			rediSearchClient = redisearch.NewClient(
-				redisDBInfo.Address(), cfg.ServiceName()+":index",
-			)
-		}
-	}
-
-	// Remote services
-	for _, srv := range cfg.ExternalServices() {
-		if !srv.Available() {
-			continue
-		}
-
-		dopts := make([]grpc.DialOption, 0)
-
-		if !srv.Insecure() {
-			creds, err := credentials.NewClientTLSFromFile(srv.TLSCertFile(), srv.ServerName())
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to create tls config for %s service", srv.Name())
-			}
-			dopts = append(dopts, grpc.WithTransportCredentials(creds))
-		} else {
-			dopts = append(dopts, grpc.WithInsecure())
-		}
-
-		serviceName := strings.ToLower(srv.Name())
-		externalServices[serviceName], err = conn.DialService(ctx, &conn.GRPCDialOptions{
-			ServiceName: srv.Name(),
-			Address:     srv.Address(),
-			K8Service:   srv.K8Service(),
-			DialOptions: dopts,
-		})
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to create connection to service %s", srv.Name())
-		}
-
-		cleanup = append(cleanup, func() {
-			externalServices[serviceName].Close()
-		})
-	}
-
 	return &Service{
 		cfg:                      cfg,
 		logger:                   logger,
-		gormDB:                   gormDB,
-		sqlDB:                    sqlDB,
-		redisClient:              redisClient,
-		rediSearchClient:         rediSearchClient,
 		httpMiddlewares:          make([]http_middleware.Middleware, 0),
 		httpMux:                  http.NewServeMux(),
 		runtimeMux:               &runtime.ServeMux{},
-		externalServicesConn:     externalServices,
 		serveMuxOptions:          make([]runtime.ServeMuxOption, 0),
 		serverOptions:            make([]grpc.ServerOption, 0),
 		unaryInterceptors:        make([]grpc.UnaryServerInterceptor, 0),
@@ -192,11 +81,7 @@ func NewService(ctx context.Context, cfg *config.Config, grpcLogger grpclog.Logg
 		unaryClientInterceptors:  make([]grpc.UnaryClientInterceptor, 0),
 		streamClientInterceptors: make([]grpc.StreamClientInterceptor, 0),
 		dialOptions:              make([]grpc.DialOption, 0),
-		shutdown: func() {
-			for _, fn := range cleanup {
-				fn()
-			}
-		},
+		shutdowns:                make([]func(), 0),
 	}, nil
 }
 
@@ -388,6 +273,11 @@ func (service *Service) ExternalServiceConn(serviceName string) (*grpc.ClientCon
 		return nil, errors.Errorf("no service exists with name: %s", serviceName)
 	}
 	return cc, nil
+}
+
+// SetDBConnPool sets options for the connection pool
+func (service *Service) SetDBConnPool(opt *conn.DBConnPoolOptions) {
+	service.dbPoolOptions = opt
 }
 
 // creates a http Muxer using runtime.NewServeMux
