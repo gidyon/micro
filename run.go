@@ -28,18 +28,22 @@ func handleErr(err error) {
 	}
 }
 
-// Start starts a grpc server and a http server that proxies requests to the grpc server.
+// Start opens connection to databases and external services, afterwards will start a grpc and http server for service.
 func (service *Service) Start(ctx context.Context, initFn func() error) {
-	// Bootstraps grpc server and client
+	handleErr(service.openDBConn(ctx))
+	handleErr(service.openRedisConn(ctx))
+	handleErr(service.openExternalConn(ctx))
 	handleErr(service.initGRPC(ctx))
-	// Execute init
 	handleErr(initFn())
-	// Start servers
 	handleErr(service.run(ctx))
 }
 
 func (service *Service) run(ctx context.Context) error {
-	defer service.shutdown()
+	defer func() {
+		for _, shutdown := range service.shutdowns {
+			shutdown()
+		}
+	}()
 
 	service.httpMux.Handle(service.runtimeMuxEndpoint, service.runtimeMux)
 
