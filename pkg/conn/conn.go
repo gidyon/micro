@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"gorm.io/driver/mysql"
+	"gorm.io/gorm/logger"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	"google.golang.org/grpc/balancer/roundrobin"
@@ -69,7 +70,9 @@ func ToSQLDBUsingORM(opt *DBOptions) (*gorm.DB, error) {
 		param,
 	)
 
-	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Silent),
+	})
 	if err != nil {
 		return nil, errors.Wrap(err, "(gorm) failed to open connection to mysql database")
 	}
