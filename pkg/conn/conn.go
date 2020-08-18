@@ -4,6 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"time"
+
+	"gorm.io/driver/mysql"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	"google.golang.org/grpc/balancer/roundrobin"
@@ -11,13 +14,20 @@ import (
 	"strings"
 
 	"github.com/go-redis/redis"
-	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
+	"gorm.io/gorm"
 
 	// Imports mysql driver
 	_ "github.com/go-sql-driver/mysql"
 )
+
+// DBConnPoolOptions contains options for customizing the connection pool
+type DBConnPoolOptions struct {
+	MaxIdleConns int
+	MaxOpenConns int
+	MaxLifetime  time.Duration
+}
 
 // DBOptions contains parameters for connecting to a SQL database
 type DBOptions struct {
@@ -27,6 +37,7 @@ type DBOptions struct {
 	User     string
 	Password string
 	Schema   string
+	ConnPool *DBConnPoolOptions
 }
 
 // PortNumber return port with any colon(:) removed
@@ -34,8 +45,18 @@ func (opt *DBOptions) PortNumber() string {
 	return strings.TrimPrefix(opt.Port, ":")
 }
 
+// OpenGormConn open a gorm connection to the database
+func OpenGormConn(opt *DBOptions) (*gorm.DB, error) {
+	return ToSQLDBUsingORM(opt)
+}
+
 // ToSQLDBUsingORM opens a connection to a SQL database returning the gorm database client
 func ToSQLDBUsingORM(opt *DBOptions) (*gorm.DB, error) {
+	// Options should not be nil
+	if opt == nil {
+		return nil, errors.New("nil db options not allowed")
+	}
+
 	// add MySQL driver specific parameter to parse date/time
 	param := "charset=utf8&parseTime=true"
 
@@ -48,16 +69,24 @@ func ToSQLDBUsingORM(opt *DBOptions) (*gorm.DB, error) {
 		param,
 	)
 
-	dialect := func() string {
-		if opt.Dialect == "" {
-			return "mysql"
-		}
-		return opt.Dialect
-	}()
-
-	db, err := gorm.Open(dialect, dsn)
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
-		return nil, errors.Wrap(err, "(gorm) failed to open connection to database")
+		return nil, errors.Wrap(err, "(gorm) failed to open connection to mysql database")
+	}
+
+	sqlDB, err := db.DB()
+	if err != nil {
+		return nil, err
+	}
+
+	if opt.ConnPool.MaxIdleConns != 0 {
+		sqlDB.SetMaxIdleConns(opt.ConnPool.MaxIdleConns)
+	}
+	if opt.ConnPool.MaxOpenConns != 0 {
+		sqlDB.SetMaxOpenConns(opt.ConnPool.MaxOpenConns)
+	}
+	if opt.ConnPool.MaxLifetime != 0 {
+		sqlDB.SetConnMaxLifetime(opt.ConnPool.MaxLifetime)
 	}
 
 	return db, nil
@@ -65,6 +94,11 @@ func ToSQLDBUsingORM(opt *DBOptions) (*gorm.DB, error) {
 
 // ToSQLDB opens a connection to an SQL database returning the database client
 func ToSQLDB(opt *DBOptions) (*sql.DB, error) {
+	// Options should not be nil
+	if opt == nil {
+		return nil, errors.New("nil db options not allowed")
+	}
+
 	// add MySQL driver specific parameter to parse date/time
 	param := "charset=utf8&parseTime=true"
 
@@ -87,6 +121,16 @@ func ToSQLDB(opt *DBOptions) (*sql.DB, error) {
 	sqlDB, err := sql.Open(dialect, dsn)
 	if err != nil {
 		return nil, errors.Wrap(err, "(sql) failed to open connection to database")
+	}
+
+	if opt.ConnPool.MaxIdleConns != 0 {
+		sqlDB.SetMaxIdleConns(opt.ConnPool.MaxIdleConns)
+	}
+	if opt.ConnPool.MaxOpenConns != 0 {
+		sqlDB.SetMaxOpenConns(opt.ConnPool.MaxOpenConns)
+	}
+	if opt.ConnPool.MaxLifetime != 0 {
+		sqlDB.SetConnMaxLifetime(opt.ConnPool.MaxLifetime)
 	}
 
 	return sqlDB, nil
