@@ -58,11 +58,10 @@ func (service *Service) run(ctx context.Context) error {
 	}
 
 	httpServer := &http.Server{
-		Addr:              fmt.Sprintf(":%d", service.cfg.ServicePort()),
-		Handler:           ghandler,
-		ReadTimeout:       time.Duration(5 * time.Second),
-		ReadHeaderTimeout: time.Duration(5 * time.Second),
-		WriteTimeout:      time.Duration(5 * time.Second),
+		Addr:         fmt.Sprintf(":%d", service.cfg.ServicePort()),
+		Handler:      ghandler,
+		ReadTimeout:  time.Duration(service.httpServerReadTimeout) * time.Second,
+		WriteTimeout: time.Duration(service.httpServerWriteTimeout) * time.Second,
 	}
 
 	// Graceful shutdown of server

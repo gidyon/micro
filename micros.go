@@ -47,6 +47,9 @@ type Service struct {
 	unaryClientInterceptors  []grpc.UnaryClientInterceptor
 	streamClientInterceptors []grpc.StreamClientInterceptor
 	shutdowns                []func()
+	// timeouts
+	httpServerReadTimeout  int
+	httpServerWriteTimeout int
 }
 
 // NewService create a micro-service utility store by parsing data from config. Pass nil logger to use default logger
@@ -278,6 +281,16 @@ func (service *Service) ExternalServiceConn(serviceName string) (*grpc.ClientCon
 // SetDBConnPool sets options for the connection pool
 func (service *Service) SetDBConnPool(opt *conn.DBConnPoolOptions) {
 	service.dbPoolOptions = opt
+}
+
+// SetHTTPServerReadTimout sets the read timeout for the http server
+func (service *Service) SetHTTPServerReadTimout(sec int) {
+	service.httpServerReadTimeout = sec
+}
+
+// SetHTTPServerWriteTimout sets the write timeout for the http server
+func (service *Service) SetHTTPServerWriteTimout(sec int) {
+	service.httpServerWriteTimeout = sec
 }
 
 // creates a http Muxer using runtime.NewServeMux
