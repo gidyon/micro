@@ -33,17 +33,11 @@ type DBConnPoolOptions struct {
 // DBOptions contains parameters for connecting to a SQL database
 type DBOptions struct {
 	Dialect  string
-	Host     string
-	Port     string
+	Address  string
 	User     string
 	Password string
 	Schema   string
 	ConnPool *DBConnPoolOptions
-}
-
-// PortNumber return port with any colon(:) removed
-func (opt *DBOptions) PortNumber() string {
-	return strings.TrimPrefix(opt.Port, ":")
 }
 
 // OpenGormConn open a gorm connection to the database
@@ -61,11 +55,10 @@ func ToSQLDBUsingORM(opt *DBOptions) (*gorm.DB, error) {
 	// add MySQL driver specific parameter to parse date/time
 	param := "charset=utf8&parseTime=true"
 
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?%s",
+	dsn := fmt.Sprintf("%s:%s@tcp(%s)/%s?%s",
 		opt.User,
 		opt.Password,
-		opt.Host,
-		opt.PortNumber(),
+		opt.Address,
 		opt.Schema,
 		param,
 	)
@@ -107,11 +100,10 @@ func ToSQLDB(opt *DBOptions) (*sql.DB, error) {
 	// add MySQL driver specific parameter to parse date/time
 	param := "charset=utf8&parseTime=true"
 
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?%s",
+	dsn := fmt.Sprintf("%s:%s@tcp(%s)/%s?%s",
 		opt.User,
 		opt.Password,
-		opt.Host,
-		opt.PortNumber(),
+		opt.Address,
 		opt.Schema,
 		param,
 	)
