@@ -9,18 +9,16 @@ security:
   tlsKey: /home/gideon/.secrets/keys/key.pem
   serverName: localhost
   insecure: true
-databases:
+database:
   sqlDatabase:
     required: true
     address: mysql.default.cluster.svc.cluster.local
-    host: localhost
-    port: 3306
     user: root
     schema: accounts
     password: hakty12
-    userFile: /home/gideon/.secrets/mysql/user
-    schemaFile: /home/gideon/.secrets/mysql/schema
-    passwordFile: /home/gideon/.secrets/mysql/password
+    # userFile: /home/gideon/.secrets/mysql/user
+    # schemaFile: /home/gideon/.secrets/mysql/schema
+    # passwordFile: /home/gideon/.secrets/mysql/password
     metadata:
       name: mysql
       dialect: mysql
@@ -28,19 +26,16 @@ databases:
   redisDatabase:
     required: true
     address: redis.default.cluster.svc.cluster.local
-    host: localhost
-    port: 6379
     user: redis
     schema: db
     password: hakty11
-    userFile: /home/gideon/.secrets/redis/user
-    passwordFile: /home/gideon/.secrets/redis/password
+    # userFile: /home/gideon/.secrets/redis/user
+    # passwordFile: /home/gideon/.secrets/redis/password
     metadata:
       name: redis
       useRediSearch: true
 externalServices:
 - name: authentication
-  type: Authentication
   required: true
   address: localhost:5600
   host: localhost
@@ -48,7 +43,6 @@ externalServices:
   tlsCert: /home/gideon/.secrets/keys/cert.pem
   serverName: localhost
 - name: notification
-  type: Notification
   required: true
   address: localhost:5640
   host: localhost

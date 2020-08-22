@@ -26,13 +26,9 @@ func (cfg *config) setConfigFromFlag() {
 		"sqldb-name", "",
 		"RDBMS database name e.g mysql, postgres ...",
 	)
-	dbHost := flag.String(
-		"sqldb-host", "",
-		"RDBMS database host (either ip address or domain name)",
-	)
-	dbPort := flag.String(
-		"sqldb-port", "",
-		"RDBMS database Port",
+	dbAddress := flag.String(
+		"sqldb-address", "",
+		"RDBMS database address (can be ip address or domain name)",
 	)
 	dbUser := flag.String(
 		"sqldb-user", "",
@@ -68,13 +64,9 @@ func (cfg *config) setConfigFromFlag() {
 		"use-redis", false,
 		"Whether to use redis database",
 	)
-	redisHost := flag.String(
-		"redis-host", "",
-		"Redis host (either ip address of domain name)",
-	)
-	redisPort := flag.String(
-		"redis-port", "",
-		"Redis port",
+	redisAddress := flag.String(
+		"redis-address", "",
+		"Redis address (can be ip address of domain name)",
 	)
 	redisUser := flag.String(
 		"redis-user", "",
@@ -143,40 +135,26 @@ func (cfg *config) setConfigFromFlag() {
 	cfgFromFlag.Security.ServerName = *serverName
 
 	// RDMS section
-	cfgFromFlag.Databases.SQLDatabase.Metadata.Orm = *dbORM
-	cfgFromFlag.Databases.SQLDatabase.Metadata.Name = *dbName
-	cfgFromFlag.Databases.SQLDatabase.Metadata.Dialect = *dbDialect
-	cfgFromFlag.Databases.SQLDatabase.Required = *useDB
-	cfgFromFlag.Databases.SQLDatabase.Host = *dbHost
-	if portStr := strings.TrimPrefix(*dbPort, ":"); portStr != "" {
-		port, err := strconv.Atoi(strings.TrimPrefix(portStr, ":"))
-		if err != nil {
-			panic("bad port for sql database")
-		}
-		cfgFromFlag.Databases.SQLDatabase.Port = port
-	}
-	cfgFromFlag.Databases.SQLDatabase.User = *dbUser
-	cfgFromFlag.Databases.SQLDatabase.UserFile = *dbUserFile
-	cfgFromFlag.Databases.SQLDatabase.Password = *dbPassword
-	cfgFromFlag.Databases.SQLDatabase.PasswordFile = *dbPasswordFile
-	cfgFromFlag.Databases.SQLDatabase.Schema = *dbSchema
-	cfgFromFlag.Databases.SQLDatabase.SchemaFile = *dbSchemaFile
+	cfgFromFlag.Database.SQLDatabase.Metadata.Orm = *dbORM
+	cfgFromFlag.Database.SQLDatabase.Metadata.Name = *dbName
+	cfgFromFlag.Database.SQLDatabase.Metadata.Dialect = *dbDialect
+	cfgFromFlag.Database.SQLDatabase.Required = *useDB
+	cfgFromFlag.Database.SQLDatabase.Address = *dbAddress
+	cfgFromFlag.Database.SQLDatabase.User = *dbUser
+	cfgFromFlag.Database.SQLDatabase.UserFile = *dbUserFile
+	cfgFromFlag.Database.SQLDatabase.Password = *dbPassword
+	cfgFromFlag.Database.SQLDatabase.PasswordFile = *dbPasswordFile
+	cfgFromFlag.Database.SQLDatabase.Schema = *dbSchema
+	cfgFromFlag.Database.SQLDatabase.SchemaFile = *dbSchemaFile
 
 	// Redis section
-	cfgFromFlag.Databases.RedisDatabase.Metadata.UseRediSearch = *useRediSearch
-	cfgFromFlag.Databases.RedisDatabase.Required = *useRedis
-	cfgFromFlag.Databases.RedisDatabase.Host = *redisHost
-	if portStr := strings.TrimPrefix(*redisPort, ":"); portStr != "" {
-		port, err := strconv.Atoi(strings.TrimPrefix(portStr, ":"))
-		if err != nil {
-			panic("bad port for cache database")
-		}
-		cfgFromFlag.Databases.RedisDatabase.Port = port
-	}
-	cfgFromFlag.Databases.RedisDatabase.User = *redisUser
-	cfgFromFlag.Databases.RedisDatabase.UserFile = *redisUserFile
-	cfgFromFlag.Databases.RedisDatabase.Password = *redisPassword
-	cfgFromFlag.Databases.RedisDatabase.PasswordFile = *redisPasswordFile
+	cfgFromFlag.Database.RedisDatabase.Metadata.UseRediSearch = *useRediSearch
+	cfgFromFlag.Database.RedisDatabase.Required = *useRedis
+	cfgFromFlag.Database.RedisDatabase.Address = *redisAddress
+	cfgFromFlag.Database.RedisDatabase.User = *redisUser
+	cfgFromFlag.Database.RedisDatabase.UserFile = *redisUserFile
+	cfgFromFlag.Database.RedisDatabase.Password = *redisPassword
+	cfgFromFlag.Database.RedisDatabase.PasswordFile = *redisPasswordFile
 
 	// Update config with config from flag
 	cfg.updateConfigWith(cfgFromFlag)

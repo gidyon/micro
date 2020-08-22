@@ -30,110 +30,100 @@ func (cfg *config) updateConfigWith(newCfg *config) {
 
 	isDBNonNil, isRedisNonNil := false, false
 	if newCfg.Databases != nil {
-		if newCfg.Databases.SQLDatabase != nil {
+		if newCfg.Database.SQLDatabase != nil {
 			isDBNonNil = true
 		}
-		if newCfg.Databases.RedisDatabase != nil {
+		if newCfg.Database.RedisDatabase != nil {
 			isRedisNonNil = true
 		}
 	}
 
 	// SQL Database
 	if isDBNonNil {
-		cfg.Databases.SQLDatabase.Required = setBoolIfEmpty(
-			cfg.Databases.SQLDatabase.Required, newCfg.Databases.SQLDatabase.Required,
+		cfg.Database.SQLDatabase.Required = setBoolIfEmpty(
+			cfg.Database.SQLDatabase.Required, newCfg.Database.SQLDatabase.Required,
 		)
-		cfg.Databases.SQLDatabase.Address = setStringIfEmpty(
-			cfg.Databases.SQLDatabase.Address, newCfg.Databases.SQLDatabase.Address,
+		cfg.Database.SQLDatabase.Address = setStringIfEmpty(
+			cfg.Database.SQLDatabase.Address, newCfg.Database.SQLDatabase.Address,
 		)
-		cfg.Databases.SQLDatabase.Host = setStringIfEmpty(
-			cfg.Databases.SQLDatabase.Host, newCfg.Databases.SQLDatabase.Host,
+		cfg.Database.SQLDatabase.User = setStringIfEmpty(
+			cfg.Database.SQLDatabase.User, newCfg.Database.SQLDatabase.User,
 		)
-		cfg.Databases.SQLDatabase.Port = setIntIfZero(
-			cfg.Databases.SQLDatabase.Port, newCfg.Databases.SQLDatabase.Port,
+		cfg.Database.SQLDatabase.Password = setStringIfEmpty(
+			cfg.Database.SQLDatabase.Password, newCfg.Database.SQLDatabase.Password,
 		)
-		cfg.Databases.SQLDatabase.User = setStringIfEmpty(
-			cfg.Databases.SQLDatabase.User, newCfg.Databases.SQLDatabase.User,
+		cfg.Database.SQLDatabase.Schema = setStringIfEmpty(
+			cfg.Database.SQLDatabase.Schema, newCfg.Database.SQLDatabase.Schema,
 		)
-		cfg.Databases.SQLDatabase.Password = setStringIfEmpty(
-			cfg.Databases.SQLDatabase.Password, newCfg.Databases.SQLDatabase.Password,
+		cfg.Database.SQLDatabase.UserFile = setStringIfEmpty(
+			cfg.Database.SQLDatabase.UserFile, newCfg.Database.SQLDatabase.UserFile,
 		)
-		cfg.Databases.SQLDatabase.Schema = setStringIfEmpty(
-			cfg.Databases.SQLDatabase.Schema, newCfg.Databases.SQLDatabase.Schema,
+		cfg.Database.SQLDatabase.PasswordFile = setStringIfEmpty(
+			cfg.Database.SQLDatabase.PasswordFile, newCfg.Database.SQLDatabase.PasswordFile,
 		)
-		cfg.Databases.SQLDatabase.UserFile = setStringIfEmpty(
-			cfg.Databases.SQLDatabase.UserFile, newCfg.Databases.SQLDatabase.UserFile,
+		cfg.Database.SQLDatabase.SchemaFile = setStringIfEmpty(
+			cfg.Database.SQLDatabase.SchemaFile, newCfg.Database.SQLDatabase.SchemaFile,
 		)
-		cfg.Databases.SQLDatabase.PasswordFile = setStringIfEmpty(
-			cfg.Databases.SQLDatabase.PasswordFile, newCfg.Databases.SQLDatabase.PasswordFile,
+		cfg.Database.SQLDatabase.Metadata.Dialect = setStringIfEmpty(
+			cfg.Database.SQLDatabase.Metadata.Dialect,
+			newCfg.Database.SQLDatabase.Metadata.Dialect,
 		)
-		cfg.Databases.SQLDatabase.SchemaFile = setStringIfEmpty(
-			cfg.Databases.SQLDatabase.SchemaFile, newCfg.Databases.SQLDatabase.SchemaFile,
+		cfg.Database.SQLDatabase.Metadata.Name = setStringIfEmpty(
+			cfg.Database.SQLDatabase.Metadata.Name,
+			newCfg.Database.SQLDatabase.Metadata.Name,
 		)
-		cfg.Databases.SQLDatabase.Metadata.Dialect = setStringIfEmpty(
-			cfg.Databases.SQLDatabase.Metadata.Dialect,
-			newCfg.Databases.SQLDatabase.Metadata.Dialect,
-		)
-		cfg.Databases.SQLDatabase.Metadata.Name = setStringIfEmpty(
-			cfg.Databases.SQLDatabase.Metadata.Name,
-			newCfg.Databases.SQLDatabase.Metadata.Name,
-		)
-		cfg.Databases.SQLDatabase.Metadata.Orm = setStringIfEmpty(
-			cfg.Databases.SQLDatabase.Metadata.Orm,
-			newCfg.Databases.SQLDatabase.Metadata.Orm,
+		cfg.Database.SQLDatabase.Metadata.Orm = setStringIfEmpty(
+			cfg.Database.SQLDatabase.Metadata.Orm,
+			newCfg.Database.SQLDatabase.Metadata.Orm,
 		)
 	}
 
 	// Redis Database
 	if isRedisNonNil {
-		cfg.Databases.RedisDatabase.Required = setBoolIfEmpty(
-			cfg.Databases.RedisDatabase.Required, newCfg.Databases.RedisDatabase.Required,
+		cfg.Database.RedisDatabase.Required = setBoolIfEmpty(
+			cfg.Database.RedisDatabase.Required, newCfg.Database.RedisDatabase.Required,
 		)
-		cfg.Databases.RedisDatabase.Address = setStringIfEmpty(
-			cfg.Databases.RedisDatabase.Address, newCfg.Databases.RedisDatabase.Address,
+		cfg.Database.RedisDatabase.Address = setStringIfEmpty(
+			cfg.Database.RedisDatabase.Address, newCfg.Database.RedisDatabase.Address,
 		)
-		cfg.Databases.RedisDatabase.Host = setStringIfEmpty(
-			cfg.Databases.RedisDatabase.Host, newCfg.Databases.RedisDatabase.Host,
+		cfg.Database.RedisDatabase.User = setStringIfEmpty(
+			cfg.Database.RedisDatabase.User, newCfg.Database.RedisDatabase.User,
 		)
-		cfg.Databases.RedisDatabase.Port = setIntIfZero(
-			cfg.Databases.RedisDatabase.Port, newCfg.Databases.RedisDatabase.Port,
+		cfg.Database.RedisDatabase.Password = setStringIfEmpty(
+			cfg.Database.RedisDatabase.Password, newCfg.Database.RedisDatabase.Password,
 		)
-		cfg.Databases.RedisDatabase.User = setStringIfEmpty(
-			cfg.Databases.RedisDatabase.User, newCfg.Databases.RedisDatabase.User,
+		cfg.Database.RedisDatabase.Schema = setStringIfEmpty(
+			cfg.Database.RedisDatabase.Schema, newCfg.Database.RedisDatabase.Schema,
 		)
-		cfg.Databases.RedisDatabase.Password = setStringIfEmpty(
-			cfg.Databases.RedisDatabase.Password, newCfg.Databases.RedisDatabase.Password,
+		cfg.Database.RedisDatabase.UserFile = setStringIfEmpty(
+			cfg.Database.RedisDatabase.UserFile, newCfg.Database.RedisDatabase.UserFile,
 		)
-		cfg.Databases.RedisDatabase.Schema = setStringIfEmpty(
-			cfg.Databases.RedisDatabase.Schema, newCfg.Databases.RedisDatabase.Schema,
+		cfg.Database.RedisDatabase.PasswordFile = setStringIfEmpty(
+			cfg.Database.RedisDatabase.PasswordFile, newCfg.Database.RedisDatabase.PasswordFile,
 		)
-		cfg.Databases.RedisDatabase.UserFile = setStringIfEmpty(
-			cfg.Databases.RedisDatabase.UserFile, newCfg.Databases.RedisDatabase.UserFile,
+		cfg.Database.RedisDatabase.SchemaFile = setStringIfEmpty(
+			cfg.Database.RedisDatabase.SchemaFile, newCfg.Database.RedisDatabase.SchemaFile,
 		)
-		cfg.Databases.RedisDatabase.PasswordFile = setStringIfEmpty(
-			cfg.Databases.RedisDatabase.PasswordFile, newCfg.Databases.RedisDatabase.PasswordFile,
+		cfg.Database.RedisDatabase.Metadata.Name = setStringIfEmpty(
+			cfg.Database.RedisDatabase.Metadata.Name,
+			newCfg.Database.RedisDatabase.Metadata.Name,
 		)
-		cfg.Databases.RedisDatabase.SchemaFile = setStringIfEmpty(
-			cfg.Databases.RedisDatabase.SchemaFile, newCfg.Databases.RedisDatabase.SchemaFile,
-		)
-		cfg.Databases.RedisDatabase.Metadata.Name = setStringIfEmpty(
-			cfg.Databases.RedisDatabase.Metadata.Name,
-			newCfg.Databases.RedisDatabase.Metadata.Name,
-		)
-		cfg.Databases.RedisDatabase.Metadata.UseRediSearch = setBoolIfEmpty(
-			cfg.Databases.RedisDatabase.Metadata.UseRediSearch,
-			newCfg.Databases.RedisDatabase.Metadata.UseRediSearch,
+		cfg.Database.RedisDatabase.Metadata.UseRediSearch = setBoolIfEmpty(
+			cfg.Database.RedisDatabase.Metadata.UseRediSearch,
+			newCfg.Database.RedisDatabase.Metadata.UseRediSearch,
 		)
 	}
 
+	// Update databases options
+	if len(newCfg.Databases) > 0 {
+		cfg.Databases = newCfg.Databases
+	}
+
 	// External services
-	if len(cfg.ExternalServices) == 0 {
-		cfg.ExternalServices = make([]*externalServiceOptions, 0)
-		if len(newCfg.ExternalServices) != 0 {
-			// cfg.ExternalServices
-			for _, extSrv := range newCfg.ExternalServices {
-				cfg.ExternalServices = append(cfg.ExternalServices, extSrv)
-			}
+	if len(newCfg.ExternalServices) != 0 {
+		// cfg.ExternalServices
+		for _, extSrv := range newCfg.ExternalServices {
+			cfg.ExternalServices = append(cfg.ExternalServices, extSrv)
 		}
 	}
 }

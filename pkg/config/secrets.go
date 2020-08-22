@@ -9,53 +9,45 @@ import (
 )
 
 func (cfg *config) updateConfigSecrets() error {
-	var (
-		err error
-		bs  []byte
-	)
+	var err error
 
-	// Database secrets
+	// Update db secrets
+	for _, db := range cfg.Databases {
+		err = updateDatabaseSecret(db)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func updateDatabaseSecret(db *databaseOptions) error {
 	// user
-	if strings.TrimSpace(cfg.Databases.SQLDatabase.UserFile) != "" {
-		bs, err = ioutil.ReadFile(cfg.Databases.SQLDatabase.UserFile)
+	if strings.TrimSpace(db.UserFile) != "" {
+		bs, err := ioutil.ReadFile(db.UserFile)
 		if err != nil {
-			return errors.Wrap(err, "failed to read database username from file")
+			return errors.Wrapf(err, "failed to read %s database username from file", db.Type)
 		}
-		cfg.Databases.SQLDatabase.User = string(bytes.TrimSpace(bs))
+		db.User = string(bytes.TrimSpace(bs))
 	}
+
 	// password
-	if strings.TrimSpace(cfg.Databases.SQLDatabase.PasswordFile) != "" {
-		bs, err = ioutil.ReadFile(cfg.Databases.SQLDatabase.PasswordFile)
+	if strings.TrimSpace(db.PasswordFile) != "" {
+		bs, err := ioutil.ReadFile(db.PasswordFile)
 		if err != nil {
-			return errors.Wrap(err, "failed to read database password from file")
+			return errors.Wrapf(err, "failed to read %s database password from file", db.Type)
 		}
-		cfg.Databases.SQLDatabase.Password = string(bytes.TrimSpace(bs))
+		db.Password = string(bytes.TrimSpace(bs))
 	}
+
 	// schema
-	if strings.TrimSpace(cfg.Databases.SQLDatabase.SchemaFile) != "" {
-		bs, err = ioutil.ReadFile(cfg.Databases.SQLDatabase.SchemaFile)
+	if strings.TrimSpace(db.SchemaFile) != "" {
+		bs, err := ioutil.ReadFile(db.SchemaFile)
 		if err != nil {
-			return errors.Wrap(err, "failed to read database schema from file")
+			return errors.Wrapf(err, "failed to read %s database schema from file", db.Type)
 		}
-		cfg.Databases.SQLDatabase.Schema = string(bytes.TrimSpace(bs))
-	}
-
-	// Redis secrets
-	// user
-	if strings.TrimSpace(cfg.Databases.RedisDatabase.UserFile) != "" {
-		bs, err = ioutil.ReadFile(cfg.Databases.RedisDatabase.UserFile)
-		if err != nil {
-			return errors.Wrap(err, "failed to read redis username from file")
-		}
-		cfg.Databases.RedisDatabase.User = string(bytes.TrimSpace(bs))
-	}
-	// password
-	if strings.TrimSpace(cfg.Databases.RedisDatabase.PasswordFile) != "" {
-		bs, err = ioutil.ReadFile(cfg.Databases.RedisDatabase.UserFile)
-		if err != nil {
-			return errors.Wrap(err, "failed to read redis password from file")
-		}
-		cfg.Databases.RedisDatabase.Password = string(bytes.TrimSpace(bs))
+		db.Schema = string(bytes.TrimSpace(bs))
 	}
 
 	return nil

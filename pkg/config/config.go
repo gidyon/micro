@@ -1,5 +1,7 @@
-// Package config contains options for passing setup information for a micro-service
+// Package config contains options for bootstrapping a service dependencies
 package config
+
+import "github.com/pkg/errors"
 
 type securityOptions struct {
 	TLSCertFile string `yaml:"tlsCert"`
@@ -24,9 +26,8 @@ type dbMetadata struct {
 // databaseOptions contains parameters that open connection to a database
 type databaseOptions struct {
 	Required     bool        `yaml:"required"`
+	Type         string      `yaml:"type"`
 	Address      string      `yaml:"address"`
-	Host         string      `yaml:"host"`
-	Port         int         `yaml:"port"`
 	User         string      `yaml:"user"`
 	Schema       string      `yaml:"schema"`
 	Password     string      `yaml:"password"`
@@ -37,7 +38,7 @@ type databaseOptions struct {
 }
 
 // databases contains information about databases used by service
-type databases struct {
+type database struct {
 	SQLDatabase   *databaseOptions `yaml:"sqlDatabase"`
 	RedisDatabase *databaseOptions `yaml:"redisDatabase"`
 }
@@ -45,8 +46,7 @@ type databases struct {
 // externalServiceOptions contains information to connect to a remote service
 type externalServiceOptions struct {
 	Name        string `yaml:"name"`
-	Type        string `yaml:"type"`
-	Available   bool   `yaml:"required"`
+	Required    bool   `yaml:"required"`
 	K8Service   bool   `yaml:"k8service"`
 	Address     string `yaml:"address"`
 	Host        string `yaml:"host"`
@@ -64,8 +64,10 @@ type config struct {
 	StartupSleepSeconds int                       `yaml:"startupSleepSeconds"`
 	Logging             *loggingOptions           `yaml:"logging"`
 	Security            *securityOptions          `yaml:"security"`
-	Databases           *databases                `yaml:"databases"`
+	Database            *database                 `yaml:"database"`
+	Databases           []*databaseOptions        `yaml:"databases"`
 	ExternalServices    []*externalServiceOptions `yaml:"externalServices"`
+	Hello               string                    `yaml:"hello"`
 }
 
 // Config contains configuration parameters, options and settings for a micro-service
@@ -133,6 +135,12 @@ func New(from ...configFrom) (*Config, error) {
 		return nil, err
 	}
 
+	// Validate config
+	err = errors.Wrap(cfg.validate(), "validation error")
+	if err != nil {
+		return nil, err
+	}
+
 	return &Config{*cfg}, nil
 }
 
@@ -140,14 +148,17 @@ func newConfig() *config {
 	return &config{
 		Logging:  new(loggingOptions),
 		Security: new(securityOptions),
-		Databases: &databases{
+		Database: &database{
 			SQLDatabase: &databaseOptions{
+				Type:     sqlDBType,
 				Metadata: new(dbMetadata),
 			},
 			RedisDatabase: &databaseOptions{
+				Type:     redisDBType,
 				Metadata: new(dbMetadata),
 			},
 		},
+		Databases:        make([]*databaseOptions, 0),
 		ExternalServices: make([]*externalServiceOptions, 0),
 	}
 }

@@ -42,25 +42,17 @@ func (cfg *config) setConfigFromEnv() error {
 		if err != nil {
 			return errors.Wrapf(err, "failed to parse %s env to boolean", EnvUseSQLDatabase)
 		}
-		cfgFromEnv.Databases.SQLDatabase.Required = useDBBool
+		cfgFromEnv.Database.SQLDatabase.Required = useDBBool
 	}
-	cfgFromEnv.Databases.SQLDatabase.Address = strings.TrimSpace(os.Getenv(EnvSQLDatabaseAddress))
-	cfgFromEnv.Databases.SQLDatabase.Host = strings.TrimSpace(os.Getenv(EnvSQLDatabaseHost))
-	if portStr := strings.TrimSpace(os.Getenv(EnvSQLDatabasePort)); portStr != "" {
-		port, err := strconv.Atoi(strings.TrimPrefix(portStr, ":"))
-		if err != nil {
-			return errors.Wrapf(err, "failed to parse %s env to int", EnvSQLDatabasePort)
-		}
-		cfgFromEnv.Databases.SQLDatabase.Port = port
-	}
-	cfgFromEnv.Databases.SQLDatabase.User = strings.TrimSpace(os.Getenv(EnvSQLDatabaseUser))
-	cfgFromEnv.Databases.SQLDatabase.UserFile = strings.TrimSpace(os.Getenv(EnvSQLDatabaseUserFile))
-	cfgFromEnv.Databases.SQLDatabase.Password = strings.TrimSpace(os.Getenv(EnvSQLDatabasePassword))
-	cfgFromEnv.Databases.SQLDatabase.PasswordFile = strings.TrimSpace(os.Getenv(EnvSQLDatabasePasswordFile))
-	cfgFromEnv.Databases.SQLDatabase.Schema = strings.TrimSpace(os.Getenv(EnvSQLDatabaseSchema))
-	cfgFromEnv.Databases.SQLDatabase.SchemaFile = strings.TrimSpace(os.Getenv(EnvSQLDatabaseSchemaFile))
-	cfgFromEnv.Databases.SQLDatabase.Metadata.Orm = strings.TrimSpace(os.Getenv(EnvSQLDatabaseORM))
-	cfgFromEnv.Databases.SQLDatabase.Metadata.Dialect = strings.TrimSpace(os.Getenv(EnvSQLDatabaseDialect))
+	cfgFromEnv.Database.SQLDatabase.Address = strings.TrimSpace(os.Getenv(EnvSQLDatabaseAddress))
+	cfgFromEnv.Database.SQLDatabase.User = strings.TrimSpace(os.Getenv(EnvSQLDatabaseUser))
+	cfgFromEnv.Database.SQLDatabase.UserFile = strings.TrimSpace(os.Getenv(EnvSQLDatabaseUserFile))
+	cfgFromEnv.Database.SQLDatabase.Password = strings.TrimSpace(os.Getenv(EnvSQLDatabasePassword))
+	cfgFromEnv.Database.SQLDatabase.PasswordFile = strings.TrimSpace(os.Getenv(EnvSQLDatabasePasswordFile))
+	cfgFromEnv.Database.SQLDatabase.Schema = strings.TrimSpace(os.Getenv(EnvSQLDatabaseSchema))
+	cfgFromEnv.Database.SQLDatabase.SchemaFile = strings.TrimSpace(os.Getenv(EnvSQLDatabaseSchemaFile))
+	cfgFromEnv.Database.SQLDatabase.Metadata.Orm = strings.TrimSpace(os.Getenv(EnvSQLDatabaseORM))
+	cfgFromEnv.Database.SQLDatabase.Metadata.Dialect = strings.TrimSpace(os.Getenv(EnvSQLDatabaseDialect))
 
 	// Redis section
 	if userRediSearchStr := strings.TrimSpace(os.Getenv(EnvUseRediSearch)); userRediSearchStr != "" {
@@ -68,29 +60,21 @@ func (cfg *config) setConfigFromEnv() error {
 		if err != nil {
 			return errors.Wrapf(err, "failed to parse %s env to boolean", EnvUseRediSearch)
 		}
-		cfgFromEnv.Databases.RedisDatabase.Metadata.UseRediSearch = useRediSearchBool
+		cfgFromEnv.Database.RedisDatabase.Metadata.UseRediSearch = useRediSearchBool
 	}
 	if useRedisStr := strings.TrimSpace(os.Getenv(EnvUseRedis)); useRedisStr != "" {
 		useRedisBool, err := strconv.ParseBool(useRedisStr)
 		if err != nil {
 			return errors.Wrapf(err, "failed to parse %s env to boolean", EnvUseRedis)
 		}
-		cfgFromEnv.Databases.RedisDatabase.Required = useRedisBool
+		cfgFromEnv.Database.RedisDatabase.Required = useRedisBool
 	}
 
-	cfgFromEnv.Databases.RedisDatabase.Address = strings.TrimSpace(os.Getenv(EnvRedisAddress))
-	cfgFromEnv.Databases.RedisDatabase.Host = strings.TrimSpace(os.Getenv(EnvRedisHost))
-	if portStr := strings.TrimSpace(os.Getenv(EnvRedisPort)); portStr != "" {
-		port, err := strconv.Atoi(strings.TrimPrefix(portStr, ":"))
-		if err != nil {
-			return errors.Wrapf(err, "failed to parse %s env to int", EnvRedisPort)
-		}
-		cfgFromEnv.Databases.RedisDatabase.Port = port
-	}
-	cfgFromEnv.Databases.RedisDatabase.User = strings.TrimSpace(os.Getenv(EnvRedisUser))
-	cfgFromEnv.Databases.RedisDatabase.UserFile = strings.TrimSpace(os.Getenv(EnvRedisUserFile))
-	cfgFromEnv.Databases.RedisDatabase.Password = strings.TrimSpace(os.Getenv(EnvRedisPassword))
-	cfgFromEnv.Databases.RedisDatabase.PasswordFile = strings.TrimSpace(os.Getenv(EnvRedisPasswordFile))
+	cfgFromEnv.Database.RedisDatabase.Address = strings.TrimSpace(os.Getenv(EnvRedisAddress))
+	cfgFromEnv.Database.RedisDatabase.User = strings.TrimSpace(os.Getenv(EnvRedisUser))
+	cfgFromEnv.Database.RedisDatabase.UserFile = strings.TrimSpace(os.Getenv(EnvRedisUserFile))
+	cfgFromEnv.Database.RedisDatabase.Password = strings.TrimSpace(os.Getenv(EnvRedisPassword))
+	cfgFromEnv.Database.RedisDatabase.PasswordFile = strings.TrimSpace(os.Getenv(EnvRedisPasswordFile))
 
 	// External services section
 	if cfg.ExternalServices == nil {

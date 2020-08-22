@@ -6,7 +6,18 @@ import (
 	"strings"
 )
 
+const (
+	sqlDBType   = "sqlDatabase"
+	redisDBType = "redisDatabase"
+)
+
+var (
+	dbTypes = []string{sqlDBType, redisDBType}
+)
+
 func (cfg *config) validate() error {
+	var err error
+
 	// Service section
 	switch {
 	case strings.TrimSpace(cfg.ServiceName) == "":
@@ -15,45 +26,7 @@ func (cfg *config) validate() error {
 		return errors.New("service port is required")
 	}
 
-	// Database section
-	if cfg.Databases.SQLDatabase.Required {
-		switch {
-		case strings.TrimSpace(cfg.Databases.SQLDatabase.Host) == "":
-			return errors.New("sqldatabase host is required")
-		case strings.TrimSpace(cfg.Databases.SQLDatabase.User) == "":
-			return errors.New("sqldatabase user is required")
-		case strings.TrimSpace(cfg.Databases.SQLDatabase.Password) == "":
-			return errors.New("sqldatabase password is required")
-		case strings.TrimSpace(cfg.Databases.SQLDatabase.Schema) == "":
-			return errors.New("sqldatabase schema is required")
-		case cfg.Databases.SQLDatabase.Port == 0:
-			cfg.Databases.SQLDatabase.Port = 3306
-		}
-
-		if cfg.Databases.SQLDatabase.Address == "" {
-			cfg.Databases.SQLDatabase.Address = fmt.Sprintf(
-				"%s:%d", cfg.Databases.SQLDatabase.Host, cfg.Databases.SQLDatabase.Port,
-			)
-		}
-	}
-
-	// Redis Section
-	if cfg.Databases.RedisDatabase.Required {
-		switch {
-		case strings.TrimSpace(cfg.Databases.RedisDatabase.Host) == "":
-			return errors.New("redis host is required")
-		case cfg.Databases.RedisDatabase.Port == 0:
-			cfg.Databases.RedisDatabase.Port = 6379
-		}
-
-		if cfg.Databases.RedisDatabase.Address == "" {
-			cfg.Databases.RedisDatabase.Address = fmt.Sprintf(
-				"%s:%d", cfg.Databases.RedisDatabase.Host, cfg.Databases.RedisDatabase.Port,
-			)
-		}
-	}
-
-	// validate tls settings
+	// TLS settings
 	if !cfg.Security.Insecure {
 		switch {
 		case strings.TrimSpace(cfg.Security.TLSCertFile) == "":
@@ -65,26 +38,73 @@ func (cfg *config) validate() error {
 		}
 	}
 
-	// validate required external services
+	// Databases validation
+	for _, db := range cfg.Databases {
+		fmt.Println(db.Address)
+		err = validateDBOptions(db)
+		if err != nil {
+			return err
+		}
+	}
+
+	// External services validation
 	for _, srv := range cfg.ExternalServices {
-		if !srv.Available {
-			continue
+		err = validateService(srv)
+		if err != nil {
+			return nil
 		}
+	}
+
+	return nil
+}
+
+func validateDBOptions(db *databaseOptions) error {
+	switch db.Type {
+	case sqlDBType:
+	case redisDBType:
+	case "":
+		return fmt.Errorf("database type is required. Supported types are %v", dbTypes)
+	default:
+		return fmt.Errorf("database type %s not known. Supported types are %v", db.Type, dbTypes)
+	}
+
+	if db.Required {
 		switch {
-		case strings.TrimSpace(srv.Name) == "":
-			return errors.New("service name is required")
-		case strings.TrimSpace(srv.ServerName) == "" && !srv.Insecure:
-			return fmt.Errorf("service %s tls server name is required", strings.ToLower(srv.Name))
-		case strings.TrimSpace(srv.TLSCertFile) == "" && !srv.Insecure:
-			return fmt.Errorf("service %s tls cert is required", strings.ToLower(srv.Name))
+		case strings.TrimSpace(db.Metadata.Name) == "":
+			return errors.New("database name is required")
+		case strings.TrimSpace(db.Address) == "":
+			return errors.New("database address is required")
+		case strings.TrimSpace(db.User) == "" && db.Address == sqlDBType:
+			return errors.New("database user is required")
+		case strings.TrimSpace(db.Password) == "" && db.Address == sqlDBType:
+			return errors.New("database password is required")
+		case strings.TrimSpace(db.Schema) == "" && db.Address == sqlDBType:
+			return errors.New("database schema is required")
 		}
-		if strings.TrimSpace(srv.Address) == "" {
-			switch {
-			case strings.TrimSpace(srv.Host) == "":
-				return fmt.Errorf("service %s host is required", strings.ToLower(srv.Name))
-			case srv.Port == 0:
-				return fmt.Errorf("service %s port is required", strings.ToLower(srv.Name))
-			}
+	}
+
+	return nil
+}
+
+func validateService(srv *externalServiceOptions) error {
+	if !srv.Required {
+		return nil
+	}
+
+	switch {
+	case strings.TrimSpace(srv.Name) == "":
+		return errors.New("service name is required")
+	case strings.TrimSpace(srv.ServerName) == "" && !srv.Insecure:
+		return fmt.Errorf("service %s tls server name is required", strings.ToLower(srv.Name))
+	case strings.TrimSpace(srv.TLSCertFile) == "" && !srv.Insecure:
+		return fmt.Errorf("service %s tls cert is required", strings.ToLower(srv.Name))
+	}
+	if strings.TrimSpace(srv.Address) == "" {
+		switch {
+		case strings.TrimSpace(srv.Host) == "":
+			return fmt.Errorf("service %s host is required", strings.ToLower(srv.Name))
+		case srv.Port == 0:
+			return fmt.Errorf("service %s port is required", strings.ToLower(srv.Name))
 		}
 	}
 

@@ -3,12 +3,11 @@ package config
 import (
 	"flag"
 	"fmt"
-
-	"github.com/pkg/errors"
 )
 
 // parses config parameters either from environment variables, files or cmd flags
 func (cfg *config) parse(froms []configFrom) error {
+	var err error
 
 	from := flag.String(
 		"config-from", FromFile.String(),
@@ -16,7 +15,7 @@ func (cfg *config) parse(froms []configFrom) error {
 	)
 
 	configFile := flag.String(
-		"config-file", "config/config.yml",
+		"config-file", "configs/config.yml",
 		`File to read service config`,
 	)
 
@@ -29,14 +28,11 @@ func (cfg *config) parse(froms []configFrom) error {
 		froms = []configFrom{fromString(*from)}
 	}
 
-	// for remove duplicates
+	// for removing duplicates
 	av := make(map[configFrom]struct{}, 0)
-
-	var err error
 
 loop:
 	for _, configFrom := range froms {
-		// Check whether its repetition
 		_, ok := av[configFrom]
 		if ok {
 			continue
@@ -76,12 +72,37 @@ loop:
 		}
 	}
 
-	// set config from secret files
+	// Merge database to databases slice
+	if cfg.Database != nil {
+		if cfg.Database.SQLDatabase != nil {
+			if cfg.Database.SQLDatabase.Required {
+				// Validate db
+				err = validateDBOptions(cfg.Database.SQLDatabase)
+				if err != nil {
+					return err
+				}
+				// Add to head
+				cfg.Databases = append([]*databaseOptions{cfg.Database.SQLDatabase}, cfg.Databases...)
+			}
+		}
+		if cfg.Database.RedisDatabase != nil {
+			if cfg.Database.SQLDatabase.Required {
+				// Validate db
+				err = validateDBOptions(cfg.Database.RedisDatabase)
+				if err != nil {
+					return err
+				}
+				// Add to head
+				cfg.Databases = append([]*databaseOptions{cfg.Database.RedisDatabase}, cfg.Databases...)
+			}
+		}
+	}
+
+	// update config from secret files
 	err = cfg.updateConfigSecrets()
 	if err != nil {
 		return fmt.Errorf("failed to set config from secrets file: %w", err)
 	}
 
-	// call validate and return any errors
-	return errors.Wrap(cfg.validate(), "validation error")
+	return nil
 }

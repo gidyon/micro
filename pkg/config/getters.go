@@ -69,8 +69,16 @@ func (cfg *Config) Logging() bool {
 	return !cfg.config.Logging.Disabled
 }
 
-// Databases is only to make the embedded struct field read-only. Use Database getters instead
-func (cfg *Config) Databases() {}
+// Databases returns list of all databases options
+func (cfg *Config) Databases() []*DatabaseInfo {
+	dbs := make([]*DatabaseInfo, 0, len(cfg.config.Databases))
+
+	for _, db := range cfg.config.Databases {
+		dbs = append(dbs, &DatabaseInfo{db})
+	}
+
+	return dbs
+}
 
 // DatabaseInfo contains parameters and connection information for a database
 type DatabaseInfo struct {
@@ -79,52 +87,66 @@ type DatabaseInfo struct {
 
 // Required is whether the database is required by the service
 func (db *DatabaseInfo) Required() bool {
-	return db != nil && db.databaseOptions.Required
+	if db != nil && db.databaseOptions != nil {
+		return db.databaseOptions.Required
+	}
+	return false
 }
 
 // Address is the database address
 func (db *DatabaseInfo) Address() string {
-	return db.databaseOptions.Address
-}
-
-// Host is the database host
-func (db *DatabaseInfo) Host() string {
-	return db.databaseOptions.Host
-}
-
-// Port is the database port
-func (db *DatabaseInfo) Port() int {
-	return db.databaseOptions.Port
+	if db != nil && db.databaseOptions != nil {
+		return db.databaseOptions.Address
+	}
+	return ""
 }
 
 // User is the database user
 func (db *DatabaseInfo) User() string {
-	return db.databaseOptions.User
+	if db != nil && db.databaseOptions != nil {
+		return db.databaseOptions.User
+	}
+	return ""
 }
 
 // Schema is the database schema
 func (db *DatabaseInfo) Schema() string {
-	return db.databaseOptions.Schema
+	if db != nil && db.databaseOptions != nil {
+		return db.databaseOptions.Schema
+	}
+	return ""
 }
 
 // Password is the database password
 func (db *DatabaseInfo) Password() string {
-	return db.databaseOptions.Password
+	if db != nil && db.databaseOptions != nil {
+		return db.databaseOptions.Password
+	}
+	return ""
 }
 
 // UserFile is path to file containing database user
 func (db *DatabaseInfo) UserFile() string {
-	return db.databaseOptions.UserFile
+	if db != nil && db.databaseOptions != nil {
+		return db.databaseOptions.UserFile
+	}
+	return ""
 }
 
 // SchemaFile is path to file containing database schema
 func (db *DatabaseInfo) SchemaFile() string {
-	return db.databaseOptions.SchemaFile
+	if db != nil && db.databaseOptions != nil {
+		return db.databaseOptions.SchemaFile
+	}
+	return ""
 }
 
 // PasswordFile is the path to file containing database password
 func (db *DatabaseInfo) PasswordFile() string {
-	return db.databaseOptions.PasswordFile
+	if db != nil && db.databaseOptions != nil {
+		return db.databaseOptions.PasswordFile
+	}
+	return ""
 }
 
 // Metadata is read-only. Use getters to get individual metadata
@@ -132,42 +154,98 @@ func (db *DatabaseInfo) Metadata() {}
 
 // UseGorm indicates whether the service will use Object Relational Mapper for database operations
 func (db *DatabaseInfo) UseGorm() bool {
-	return db.databaseOptions.Metadata.Orm == "gorm"
+	if db != nil && db.databaseOptions != nil && db.databaseOptions.Metadata != nil {
+		return db.databaseOptions.Metadata.Orm == "gorm"
+	}
+	return false
 }
 
-// UseRediSearch returns boolen that shows whether to use redisearch
+// UseRediSearch returns boolen that shows whether service uses redisearch
 func (db *DatabaseInfo) UseRediSearch() bool {
-	return db.databaseOptions.Metadata.UseRediSearch
+	if db != nil && db.databaseOptions != nil && db.databaseOptions.Metadata != nil {
+		return db.databaseOptions.Metadata.UseRediSearch
+	}
+	return false
 }
 
-// SQLDatabaseDialect returns the dialect to used for interacting with sql database
+// SQLDatabaseDialect returns the sql dialect for the sql database options
 func (db *DatabaseInfo) SQLDatabaseDialect() string {
-	return db.databaseOptions.Metadata.Dialect
+	if db != nil && db.databaseOptions != nil {
+		return db.databaseOptions.Metadata.Dialect
+	}
+	return ""
 }
 
-// SQLDatabase is the service sql database
+// SQLDatabase returns the first sql database options for the service
 func (cfg *Config) SQLDatabase() *DatabaseInfo {
-	return &DatabaseInfo{cfg.config.Databases.SQLDatabase}
+	for _, db := range cfg.config.Databases {
+		if db.Type == sqlDBType {
+			return &DatabaseInfo{db}
+		}
+	}
+	return nil
 }
 
-// UseSQLDatabase indicates whether the service will use mysql database
+// SQLDatabaseByName returns the first sql database options with the given name
+func (cfg *Config) SQLDatabaseByName(identifier string) *DatabaseInfo {
+	for _, db := range cfg.config.Databases {
+		if db.Type == sqlDBType && db.Metadata.Name == identifier {
+			return &DatabaseInfo{db}
+		}
+	}
+	return nil
+}
+
+// UseSQLDatabase indicates whether the service has sql database options
 func (cfg *Config) UseSQLDatabase() bool {
-	return cfg.config.Databases.SQLDatabase.Required
+	for _, db := range cfg.config.Databases {
+		if db.Type == sqlDBType && db.Required {
+			return true
+		}
+	}
+	return false
 }
 
-// RedisDatabase is the service redis database
+// RedisDatabase returns the first redis database options for the service
 func (cfg *Config) RedisDatabase() *DatabaseInfo {
-	return &DatabaseInfo{cfg.config.Databases.RedisDatabase}
+	for _, db := range cfg.config.Databases {
+		if db.Type == redisDBType {
+			return &DatabaseInfo{db}
+		}
+	}
+	return nil
 }
 
-// UseRedis returns boolean that shows whether to use redis
+// RedisDatabaseByName returns the first redis database options with the given name
+func (cfg *Config) RedisDatabaseByName(name string) *DatabaseInfo {
+	for _, db := range cfg.config.Databases {
+		if db.Type == redisDBType && db.Metadata != nil {
+			if db.Metadata.Name == name {
+				return &DatabaseInfo{db}
+			}
+		}
+	}
+	return nil
+}
+
+// UseRedis returns whether service has redis options
 func (cfg *Config) UseRedis() bool {
-	return cfg.config.Databases.RedisDatabase.Required
+	for _, db := range cfg.config.Databases {
+		if db.Type == redisDBType && db.Required {
+			return true
+		}
+	}
+	return false
 }
 
-// UseRediSearch returns boolean that shows whether to use redisearch
+// UseRediSearch returns whether service has redisearch options
 func (cfg *Config) UseRediSearch() bool {
-	return cfg.config.Databases.RedisDatabase.Metadata.UseRediSearch
+	for _, db := range cfg.config.Databases {
+		if db.Type == redisDBType && db.Metadata.UseRediSearch {
+			return true
+		}
+	}
+	return false
 }
 
 // ServiceInfo contains metadata and discovery information for a service
@@ -184,19 +262,14 @@ func (cfg *Config) ExternalServices() []*ServiceInfo {
 	return srvsInfo
 }
 
-// Available indicates whether the service is required/available
-func (srv *ServiceInfo) Available() bool {
-	return srv.externalServiceOptions.Available
+// Required indicates whether the service is required
+func (srv *ServiceInfo) Required() bool {
+	return srv.externalServiceOptions.Required
 }
 
 // K8Service indicates whether the service is a k8s service
 func (srv *ServiceInfo) K8Service() bool {
 	return srv.externalServiceOptions.K8Service
-}
-
-// Type returns the type of the service
-func (srv *ServiceInfo) Type() string {
-	return srv.externalServiceOptions.Type
 }
 
 // Name returns the name of the service
@@ -243,15 +316,4 @@ func (cfg *Config) ExternalServiceByName(serviceName string) (*ServiceInfo, erro
 		}
 	}
 	return nil, errors.Errorf("no service found with name: %s", serviceName)
-}
-
-// ExternalServiceByType first service whose type matches the passed service type.
-// The type comparison is case-insentive.
-func (cfg *Config) ExternalServiceByType(serviceType string) (*ServiceInfo, error) {
-	for _, srv := range cfg.ExternalServices() {
-		if strings.ToLower(srv.Type()) == strings.ToLower(serviceType) {
-			return srv, nil
-		}
-	}
-	return nil, errors.Errorf("no service found with type: %s", serviceType)
 }
