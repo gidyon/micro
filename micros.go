@@ -27,11 +27,11 @@ import (
 type Service struct {
 	cfg                      *config.Config
 	logger                   grpclog.LoggerV2
-	gormDB                   *gorm.DB // uses gorm
-	sqlDB                    *sql.DB  // uses database/sql driver
-	dbPoolOptions            *conn.DBConnPoolOptions
-	redisClient              *redis.Client
-	rediSearchClient         *redisearch.Client
+	gormDBs                  map[string]*gorm.DB // uses gorm
+	sqlDBs                   map[string]*sql.DB  // uses database/sql driver
+	dbPoolOptions            map[string]*conn.DBConnPoolOptions
+	redisClients             map[string]*redis.Client
+	rediSearchClients        map[string]*redisearch.Client
 	runtimeMuxEndpoint       string
 	httpMiddlewares          []http_middleware.Middleware
 	httpMux                  *http.ServeMux
@@ -54,7 +54,6 @@ type Service struct {
 
 // NewService create a micro-service utility store by parsing data from config. Pass nil logger to use default logger
 func NewService(ctx context.Context, cfg *config.Config, grpcLogger grpclog.LoggerV2) (*Service, error) {
-
 	if cfg == nil {
 		return nil, errors.New("nil config not allowed")
 	}
@@ -74,6 +73,11 @@ func NewService(ctx context.Context, cfg *config.Config, grpcLogger grpclog.Logg
 	return &Service{
 		cfg:                      cfg,
 		logger:                   logger,
+		gormDBs:                  make(map[string]*gorm.DB),
+		sqlDBs:                   make(map[string]*sql.DB),
+		dbPoolOptions:            make(map[string]*conn.DBConnPoolOptions),
+		redisClients:             make(map[string]*redis.Client),
+		rediSearchClients:        make(map[string]*redisearch.Client),
 		httpMiddlewares:          make([]http_middleware.Middleware, 0),
 		httpMux:                  http.NewServeMux(),
 		runtimeMux:               &runtime.ServeMux{},
@@ -220,27 +224,47 @@ func (service *Service) GRPCServer() *grpc.Server {
 	return service.gRPCServer
 }
 
-// GormDB returns a gorm db instance
+// GormDB returns the first gorm db with name "mysql"
 func (service *Service) GormDB() *gorm.DB {
-	return service.gormDB
+	return service.gormDBs["mysql"]
 }
 
-// SQLDB returns database/sql db instance
+// GormDBByName returns the first gorm db with given name
+func (service *Service) GormDBByName(name string) *gorm.DB {
+	return service.gormDBs[name]
+}
+
+// SQLDB returns the first database/sql db with name "mysql"
 func (service *Service) SQLDB() *sql.DB {
-	return service.sqlDB
+	return service.sqlDBs["mysql"]
 }
 
-// RedisClient returns a redis client
+// SQLDBByName returns the first database/sql db with given name
+func (service *Service) SQLDBByName(name string) *sql.DB {
+	return service.sqlDBs[name]
+}
+
+// RedisClient returns the first redis client with name "redis"
 func (service *Service) RedisClient() *redis.Client {
-	return service.redisClient
+	return service.redisClients["redis"]
 }
 
-// RediSearchClient returns redisearch client
+// RedisClientByName returns the first redis client with given name
+func (service *Service) RedisClientByName(name string) *redis.Client {
+	return service.redisClients[name]
+}
+
+// RediSearchClient returns the first redisearch client with name "redis"
 func (service *Service) RediSearchClient() *redisearch.Client {
-	return service.rediSearchClient
+	return service.rediSearchClients["redis"]
 }
 
-// DialExternalService dials to an external service
+// RediSearchClientByName returns the first redisearch client with given name
+func (service *Service) RediSearchClientByName(name string) *redisearch.Client {
+	return service.rediSearchClients[name]
+}
+
+// DialExternalService grpc dials to an external service
 func (service *Service) DialExternalService(
 	ctx context.Context, serviceName string, dialOptions ...grpc.DialOption,
 ) (*grpc.ClientConn, error) {
@@ -279,8 +303,10 @@ func (service *Service) ExternalServiceConn(serviceName string) (*grpc.ClientCon
 }
 
 // SetDBConnPool sets options for the connection pool
-func (service *Service) SetDBConnPool(opt *conn.DBConnPoolOptions) {
-	service.dbPoolOptions = opt
+func (service *Service) SetDBConnPool(opt *conn.DBConnPoolOptions, names ...string) {
+	for _, name := range names {
+		service.dbPoolOptions[name] = opt
+	}
 }
 
 // SetHTTPServerReadTimout sets the read timeout for the http server
