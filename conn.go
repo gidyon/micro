@@ -2,7 +2,6 @@ package micro
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"github.com/RediSearch/redisearch-go/redisearch"
@@ -20,8 +19,7 @@ func (service *Service) openDBConn(ctx context.Context) error {
 		if sqlDBInfo.UseGorm() {
 			gormDB, err := conn.OpenGormConn(&conn.DBOptions{
 				Dialect:  sqlDBInfo.SQLDatabaseDialect(),
-				Host:     sqlDBInfo.Host(),
-				Port:     fmt.Sprintf("%d", sqlDBInfo.Port()),
+				Address:  sqlDBInfo.Address(),
 				User:     sqlDBInfo.User(),
 				Password: sqlDBInfo.Password(),
 				Schema:   sqlDBInfo.Schema(),
@@ -35,8 +33,7 @@ func (service *Service) openDBConn(ctx context.Context) error {
 		} else {
 			sqlDB, err := conn.ToSQLDB(&conn.DBOptions{
 				Dialect:  sqlDBInfo.SQLDatabaseDialect(),
-				Host:     sqlDBInfo.Host(),
-				Port:     fmt.Sprintf("%d", sqlDBInfo.Port()),
+				Address:  sqlDBInfo.Address(),
 				User:     sqlDBInfo.User(),
 				Password: sqlDBInfo.Password(),
 				Schema:   sqlDBInfo.Schema(),
@@ -62,9 +59,11 @@ func (service *Service) openRedisConn(ctx context.Context) error {
 	if cfg.UseRedis() {
 		redisDBInfo := cfg.RedisDatabase()
 
+		vals := strings.Split(redisDBInfo.Address(), ":")
+
 		service.redisClient = conn.NewRedisClient(&conn.RedisOptions{
-			Address: redisDBInfo.Host(),
-			Port:    fmt.Sprintf("%d", redisDBInfo.Port()),
+			Address: vals[0],
+			Port:    vals[1],
 		})
 
 		service.shutdowns = append(service.shutdowns, func() {
@@ -90,7 +89,7 @@ func (service *Service) openExternalConn(ctx context.Context) error {
 
 	// Remote services
 	for _, srv := range cfg.ExternalServices() {
-		if !srv.Available() {
+		if !srv.Required() {
 			continue
 		}
 
@@ -107,6 +106,7 @@ func (service *Service) openExternalConn(ctx context.Context) error {
 		}
 
 		serviceName := strings.ToLower(srv.Name())
+
 		externalServices[serviceName], err = conn.DialService(ctx, &conn.GRPCDialOptions{
 			ServiceName: srv.Name(),
 			Address:     srv.Address(),
