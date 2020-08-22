@@ -113,7 +113,7 @@ func RegisterProbe(opt *ProbeOptions) http.HandlerFunc {
 
 		// check external services
 		for _, extSrv := range cfg.ExternalServices() {
-			if !extSrv.Available() {
+			if !extSrv.Required() {
 				continue
 			}
 			wg.Add(1)
