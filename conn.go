@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/RediSearch/redisearch-go/redisearch"
+	"github.com/gidyon/micro/pkg/config"
 	"github.com/gidyon/micro/pkg/conn"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
@@ -14,8 +15,10 @@ import (
 func (service *Service) openDBConn(ctx context.Context) error {
 	var cfg = service.cfg
 
-	if cfg.UseSQLDatabase() {
-		sqlDBInfo := cfg.SQLDatabase()
+	for _, sqlDBInfo := range cfg.Databases() {
+		if sqlDBInfo.Type != config.SQLDBType && !sqlDBInfo.Required() {
+			continue
+		}
 		if sqlDBInfo.UseGorm() {
 			gormDB, err := conn.OpenGormConn(&conn.DBOptions{
 				Dialect:  sqlDBInfo.SQLDatabaseDialect(),
@@ -23,13 +26,13 @@ func (service *Service) openDBConn(ctx context.Context) error {
 				User:     sqlDBInfo.User(),
 				Password: sqlDBInfo.Password(),
 				Schema:   sqlDBInfo.Schema(),
-				ConnPool: service.dbPoolOptions,
+				ConnPool: service.dbPoolOptions[sqlDBInfo.Metadata().Name()],
 			})
 			if err != nil {
 				return err
 			}
 
-			service.gormDB = gormDB
+			service.gormDBs[sqlDBInfo.Metadata().Name()] = gormDB
 		} else {
 			sqlDB, err := conn.ToSQLDB(&conn.DBOptions{
 				Dialect:  sqlDBInfo.SQLDatabaseDialect(),
@@ -42,7 +45,7 @@ func (service *Service) openDBConn(ctx context.Context) error {
 				return err
 			}
 
-			service.sqlDB = sqlDB
+			service.sqlDBs[sqlDBInfo.Metadata().Name()] = sqlDB
 
 			service.shutdowns = append(service.shutdowns, func() {
 				sqlDB.Close()
@@ -56,25 +59,27 @@ func (service *Service) openDBConn(ctx context.Context) error {
 func (service *Service) openRedisConn(ctx context.Context) error {
 	var cfg = service.cfg
 
-	if cfg.UseRedis() {
-		redisDBInfo := cfg.RedisDatabase()
+	for _, redisOptions := range cfg.Databases() {
+		if redisOptions.Type != config.RedisDBType && !redisOptions.Required() {
+			continue
+		}
 
-		vals := strings.Split(redisDBInfo.Address(), ":")
+		vals := strings.Split(redisOptions.Address(), ":")
 
-		service.redisClient = conn.NewRedisClient(&conn.RedisOptions{
+		service.redisClients[redisOptions.Metadata().Name()] = conn.NewRedisClient(&conn.RedisOptions{
 			Address: vals[0],
 			Port:    vals[1],
 		})
 
-		service.shutdowns = append(service.shutdowns, func() {
-			service.redisClient.Close()
-		})
-
 		if cfg.UseRediSearch() {
-			service.rediSearchClient = redisearch.NewClient(
-				redisDBInfo.Address(), cfg.ServiceName()+":index",
+			service.rediSearchClients[redisOptions.Metadata().Name()] = redisearch.NewClient(
+				redisOptions.Address(), cfg.ServiceName()+":index",
 			)
 		}
+
+		service.shutdowns = append(service.shutdowns, func() {
+			service.redisClients[redisOptions.Metadata().Name()].Close()
+		})
 	}
 
 	return nil
