@@ -150,12 +150,16 @@ func newConfig() *config {
 		Security: new(securityOptions),
 		Database: &database{
 			SQLDatabase: &databaseOptions{
-				Type:     sqlDBType,
-				Metadata: new(dbMetadata),
+				Type: SQLDBType,
+				Metadata: &dbMetadata{
+					Name: "mysql",
+				},
 			},
 			RedisDatabase: &databaseOptions{
-				Type:     redisDBType,
-				Metadata: new(dbMetadata),
+				Type: RedisDBType,
+				Metadata: &dbMetadata{
+					Name: "redis",
+				},
 			},
 		},
 		Databases:        make([]*databaseOptions, 0),

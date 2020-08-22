@@ -7,12 +7,14 @@ import (
 )
 
 const (
-	sqlDBType   = "sqlDatabase"
-	redisDBType = "redisDatabase"
+	// SQLDBType is sql database type
+	SQLDBType = "sqlDatabase"
+	// RedisDBType is redis database type
+	RedisDBType = "redisDatabase"
 )
 
 var (
-	dbTypes = []string{sqlDBType, redisDBType}
+	dbTypes = []string{SQLDBType, RedisDBType}
 )
 
 func (cfg *config) validate() error {
@@ -60,8 +62,8 @@ func (cfg *config) validate() error {
 
 func validateDBOptions(db *databaseOptions) error {
 	switch db.Type {
-	case sqlDBType:
-	case redisDBType:
+	case SQLDBType:
+	case RedisDBType:
 	case "":
 		return fmt.Errorf("database type is required. Supported types are %v", dbTypes)
 	default:
@@ -74,11 +76,11 @@ func validateDBOptions(db *databaseOptions) error {
 			return errors.New("database name is required")
 		case strings.TrimSpace(db.Address) == "":
 			return errors.New("database address is required")
-		case strings.TrimSpace(db.User) == "" && db.Address == sqlDBType:
+		case strings.TrimSpace(db.User) == "" && db.Address == SQLDBType:
 			return errors.New("database user is required")
-		case strings.TrimSpace(db.Password) == "" && db.Address == sqlDBType:
+		case strings.TrimSpace(db.Password) == "" && db.Address == SQLDBType:
 			return errors.New("database password is required")
-		case strings.TrimSpace(db.Schema) == "" && db.Address == sqlDBType:
+		case strings.TrimSpace(db.Schema) == "" && db.Address == SQLDBType:
 			return errors.New("database schema is required")
 		}
 	}

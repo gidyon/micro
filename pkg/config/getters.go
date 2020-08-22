@@ -80,9 +80,38 @@ func (cfg *Config) Databases() []*DatabaseInfo {
 	return dbs
 }
 
-// DatabaseInfo contains parameters and connection information for a database
+// DatabaseInfo contains parameters for connecting to a database
 type DatabaseInfo struct {
 	*databaseOptions
+}
+
+// DatabaseMetadata contains database metadata options
+type DatabaseMetadata struct {
+	*dbMetadata
+}
+
+// Name returns the name of the database
+func (md *DatabaseMetadata) Name() string {
+	if md != nil && md.dbMetadata != nil {
+		return md.dbMetadata.Name
+	}
+	return ""
+}
+
+// Dialect returns the dialect of the database
+func (md *DatabaseMetadata) Dialect() string {
+	if md != nil && md.dbMetadata != nil {
+		return md.dbMetadata.Dialect
+	}
+	return ""
+}
+
+// ORM returns the orm of the database
+func (md *DatabaseMetadata) ORM() string {
+	if md != nil && md.dbMetadata != nil {
+		return md.dbMetadata.Orm
+	}
+	return ""
 }
 
 // Required is whether the database is required by the service
@@ -149,12 +178,16 @@ func (db *DatabaseInfo) PasswordFile() string {
 	return ""
 }
 
-// Metadata is read-only. Use getters to get individual metadata
-func (db *DatabaseInfo) Metadata() {}
+// Metadata is contains metadata information for the database
+func (db *DatabaseInfo) Metadata() *DatabaseMetadata {
+	return &DatabaseMetadata{db.databaseOptions.Metadata}
+}
 
 // UseGorm indicates whether the service will use Object Relational Mapper for database operations
 func (db *DatabaseInfo) UseGorm() bool {
-	if db != nil && db.databaseOptions != nil && db.databaseOptions.Metadata != nil {
+	if db != nil && db.databaseOptions != nil &&
+		db.databaseOptions.Type == SQLDBType &&
+		db.databaseOptions.Metadata != nil {
 		return db.databaseOptions.Metadata.Orm == "gorm"
 	}
 	return false
@@ -162,7 +195,9 @@ func (db *DatabaseInfo) UseGorm() bool {
 
 // UseRediSearch returns boolen that shows whether service uses redisearch
 func (db *DatabaseInfo) UseRediSearch() bool {
-	if db != nil && db.databaseOptions != nil && db.databaseOptions.Metadata != nil {
+	if db != nil && db.databaseOptions != nil &&
+		db.databaseOptions.Type == RedisDBType &&
+		db.databaseOptions.Metadata != nil {
 		return db.databaseOptions.Metadata.UseRediSearch
 	}
 	return false
@@ -179,7 +214,7 @@ func (db *DatabaseInfo) SQLDatabaseDialect() string {
 // SQLDatabase returns the first sql database options for the service
 func (cfg *Config) SQLDatabase() *DatabaseInfo {
 	for _, db := range cfg.config.Databases {
-		if db.Type == sqlDBType {
+		if db.Type == SQLDBType {
 			return &DatabaseInfo{db}
 		}
 	}
@@ -189,7 +224,7 @@ func (cfg *Config) SQLDatabase() *DatabaseInfo {
 // SQLDatabaseByName returns the first sql database options with the given name
 func (cfg *Config) SQLDatabaseByName(identifier string) *DatabaseInfo {
 	for _, db := range cfg.config.Databases {
-		if db.Type == sqlDBType && db.Metadata.Name == identifier {
+		if db.Type == SQLDBType && db.Metadata.Name == identifier {
 			return &DatabaseInfo{db}
 		}
 	}
@@ -199,7 +234,7 @@ func (cfg *Config) SQLDatabaseByName(identifier string) *DatabaseInfo {
 // UseSQLDatabase indicates whether the service has sql database options
 func (cfg *Config) UseSQLDatabase() bool {
 	for _, db := range cfg.config.Databases {
-		if db.Type == sqlDBType && db.Required {
+		if db.Type == SQLDBType && db.Required {
 			return true
 		}
 	}
@@ -209,7 +244,7 @@ func (cfg *Config) UseSQLDatabase() bool {
 // RedisDatabase returns the first redis database options for the service
 func (cfg *Config) RedisDatabase() *DatabaseInfo {
 	for _, db := range cfg.config.Databases {
-		if db.Type == redisDBType {
+		if db.Type == RedisDBType {
 			return &DatabaseInfo{db}
 		}
 	}
@@ -219,7 +254,7 @@ func (cfg *Config) RedisDatabase() *DatabaseInfo {
 // RedisDatabaseByName returns the first redis database options with the given name
 func (cfg *Config) RedisDatabaseByName(name string) *DatabaseInfo {
 	for _, db := range cfg.config.Databases {
-		if db.Type == redisDBType && db.Metadata != nil {
+		if db.Type == RedisDBType && db.Metadata != nil {
 			if db.Metadata.Name == name {
 				return &DatabaseInfo{db}
 			}
@@ -231,7 +266,7 @@ func (cfg *Config) RedisDatabaseByName(name string) *DatabaseInfo {
 // UseRedis returns whether service has redis options
 func (cfg *Config) UseRedis() bool {
 	for _, db := range cfg.config.Databases {
-		if db.Type == redisDBType && db.Required {
+		if db.Type == RedisDBType && db.Required {
 			return true
 		}
 	}
@@ -241,7 +276,7 @@ func (cfg *Config) UseRedis() bool {
 // UseRediSearch returns whether service has redisearch options
 func (cfg *Config) UseRediSearch() bool {
 	for _, db := range cfg.config.Databases {
-		if db.Type == redisDBType && db.Metadata.UseRediSearch {
+		if db.Type == RedisDBType && db.Metadata.UseRediSearch {
 			return true
 		}
 	}
