@@ -16,7 +16,7 @@ func (service *Service) openDBConn(ctx context.Context) error {
 	var cfg = service.cfg
 
 	for _, sqlDBInfo := range cfg.Databases() {
-		if sqlDBInfo.Type != config.SQLDBType && !sqlDBInfo.Required() {
+		if sqlDBInfo.Type != config.SQLDBType || !sqlDBInfo.Required() {
 			continue
 		}
 		if sqlDBInfo.UseGorm() {
