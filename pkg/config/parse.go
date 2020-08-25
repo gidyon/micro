@@ -86,7 +86,7 @@ loop:
 			}
 		}
 		if cfg.Database.RedisDatabase != nil {
-			if cfg.Database.SQLDatabase.Required {
+			if cfg.Database.RedisDatabase.Required {
 				// Validate db
 				err = validateDBOptions(cfg.Database.RedisDatabase)
 				if err != nil {
