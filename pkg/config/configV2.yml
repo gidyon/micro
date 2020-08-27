@@ -39,14 +39,10 @@ externalServices:
 - name: authentication
   required: true
   address: localhost:5600
-  host: localhost
-  port: 5600
   tlsCert: /home/gideon/.secrets/keys/cert.pem
   serverName: localhost
 - name: notification
   required: true
   address: localhost:5640
-  host: localhost
-  port: 5640
   tlsCert: /home/gideon/.secrets/keys/cert.pem
   serverName: localhost

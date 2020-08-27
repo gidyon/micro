@@ -42,7 +42,6 @@ func (cfg *config) validate() error {
 
 	// Databases validation
 	for _, db := range cfg.Databases {
-		fmt.Println(db.Address)
 		err = validateDBOptions(db)
 		if err != nil {
 			return err
@@ -100,14 +99,8 @@ func validateService(srv *externalServiceOptions) error {
 		return fmt.Errorf("service %s tls server name is required", strings.ToLower(srv.Name))
 	case strings.TrimSpace(srv.TLSCertFile) == "" && !srv.Insecure:
 		return fmt.Errorf("service %s tls cert is required", strings.ToLower(srv.Name))
-	}
-	if strings.TrimSpace(srv.Address) == "" {
-		switch {
-		case strings.TrimSpace(srv.Host) == "":
-			return fmt.Errorf("service %s host is required", strings.ToLower(srv.Name))
-		case srv.Port == 0:
-			return fmt.Errorf("service %s port is required", strings.ToLower(srv.Name))
-		}
+	case strings.TrimSpace(srv.Address) == "":
+		return fmt.Errorf("service %s address is required", strings.ToLower(srv.Name))
 	}
 
 	return nil

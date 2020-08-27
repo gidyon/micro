@@ -49,8 +49,6 @@ type externalServiceOptions struct {
 	Required    bool   `yaml:"required"`
 	K8Service   bool   `yaml:"k8service"`
 	Address     string `yaml:"address"`
-	Host        string `yaml:"host"`
-	Port        int    `yaml:"port"`
 	TLSCertFile string `yaml:"tlsCert"`
 	ServerName  string `yaml:"serverName"`
 	Insecure    bool   `yaml:"insecure"`

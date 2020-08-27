@@ -317,16 +317,6 @@ func (srv *ServiceInfo) Address() string {
 	return srv.externalServiceOptions.Address
 }
 
-// Host returns the host name of the service
-func (srv *ServiceInfo) Host() string {
-	return srv.externalServiceOptions.Host
-}
-
-// Port returns the host name of the service
-func (srv *ServiceInfo) Port() int {
-	return srv.externalServiceOptions.Port
-}
-
 // TLSCertFile returns the service tls certificate file path
 func (srv *ServiceInfo) TLSCertFile() string {
 	return srv.externalServiceOptions.TLSCertFile
