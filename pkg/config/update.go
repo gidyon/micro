@@ -9,16 +9,12 @@ import (
 
 func (cfg *config) updateConfigWith(newCfg *config) {
 	// Set config only if zero value
-	cfg.ServiceVersion = setStringIfEmpty(cfg.ServiceVersion, newCfg.ServiceVersion)
 	cfg.ServiceName = setStringIfEmpty(cfg.ServiceName, newCfg.ServiceName)
-	cfg.ServicePort = setIntIfZero(cfg.ServicePort, newCfg.ServicePort)
+	cfg.HTTPort = setIntIfZero(cfg.HTTPort, newCfg.HTTPort)
 	cfg.StartupSleepSeconds = setIntIfZero(cfg.StartupSleepSeconds, newCfg.StartupSleepSeconds)
 
-	// Service logging
-	if newCfg.Logging != nil {
-		cfg.Logging.Level = setIntIfZero(cfg.Logging.Level, newCfg.Logging.Level)
-		cfg.Logging.TimeFormat = setStringIfEmpty(cfg.Logging.TimeFormat, newCfg.Logging.TimeFormat)
-	}
+	// Service log
+	cfg.LogLevel = setIntIfZero(cfg.LogLevel, newCfg.LogLevel)
 
 	// Service security
 	if newCfg.Security != nil {
@@ -136,39 +132,39 @@ func getFileContent(fileFile string) (string, error) {
 	return string(bytes.TrimSpace(bs)), nil
 }
 
-func setStringFromFileIfEmpty(fromString, fileName string) (string, error) {
-	if fromString == "" {
-		return getFileContent(fileName)
+func setStringFromFileIfEmpty(val, def string) (string, error) {
+	if val == "" {
+		return getFileContent(def)
 	}
-	return fromString, nil
+	return val, nil
 }
 
-func setStringIfEmpty(fromString, toString string) string {
-	if fromString == "" {
-		return toString
+func setStringIfEmpty(val, def string) string {
+	if val == "" {
+		return def
 	}
-	return fromString
+	return val
 }
 
-func setBoolIfEmpty(from, to bool) bool {
-	if from {
-		return from
+func setBoolIfEmpty(val, def bool) bool {
+	if val {
+		return val
 	}
-	return to
+	return def
 }
 
-func setSliceIfEmpty(fromSlice, toSlice []*externalServiceOptions) []*externalServiceOptions {
-	if fromSlice == nil {
-		if toSlice != nil {
-			return toSlice
+func setSliceIfEmpty(val, def []*externalServiceOptions) []*externalServiceOptions {
+	if val == nil {
+		if def != nil {
+			return def
 		}
 	}
-	return fromSlice
+	return val
 }
 
-func setIntIfZero(from, to int) int {
-	if from == 0 {
-		return to
+func setIntIfZero(val, def int) int {
+	if val == 0 {
+		return def
 	}
-	return from
+	return val
 }

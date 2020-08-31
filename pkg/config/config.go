@@ -10,12 +10,6 @@ type securityOptions struct {
 	Insecure    bool   `yaml:"insecure"`
 }
 
-type loggingOptions struct {
-	Disabled   bool   `yaml:"disabled"`
-	Level      int    `yaml:"level"`
-	TimeFormat string `yaml:"timeFormat"`
-}
-
 type dbMetadata struct {
 	Name          string `yaml:"name"`
 	Dialect       string `yaml:"dialect"`
@@ -56,16 +50,15 @@ type externalServiceOptions struct {
 
 // config contains configuration parameters, options and settings for a micro-service
 type config struct {
-	ServiceVersion      string                    `yaml:"serviceVersion"`
 	ServiceName         string                    `yaml:"serviceName"`
-	ServicePort         int                       `yaml:"servicePort"`
+	HTTPort             int                       `yaml:"httpPort"`
+	GRPCPort            int                       `yaml:"grpcPort"`
 	StartupSleepSeconds int                       `yaml:"startupSleepSeconds"`
-	Logging             *loggingOptions           `yaml:"logging"`
+	LogLevel            int                       `yaml:"logLevel"`
 	Security            *securityOptions          `yaml:"security"`
 	Database            *database                 `yaml:"database"`
 	Databases           []*databaseOptions        `yaml:"databases"`
 	ExternalServices    []*externalServiceOptions `yaml:"externalServices"`
-	Hello               string                    `yaml:"hello"`
 }
 
 // Config contains configuration parameters, options and settings for a micro-service
@@ -144,7 +137,7 @@ func New(from ...configFrom) (*Config, error) {
 
 func newConfig() *config {
 	return &config{
-		Logging:  new(loggingOptions),
+		LogLevel: -1,
 		Security: new(securityOptions),
 		Database: &database{
 			SQLDatabase: &databaseOptions{

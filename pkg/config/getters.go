@@ -11,14 +11,17 @@ func (cfg *Config) ServiceName() string {
 	return cfg.config.ServiceName
 }
 
-// ServiceVersion returns the service version
-func (cfg *Config) ServiceVersion() string {
-	return cfg.config.ServiceVersion
+// ServicePort returns the service http port
+func (cfg *Config) ServicePort() int {
+	return cfg.config.HTTPort
 }
 
-// ServicePort returns the service port
-func (cfg *Config) ServicePort() int {
-	return cfg.config.ServicePort
+// GrpcPort returns the service grpc port
+func (cfg *Config) GrpcPort() int {
+	if cfg.config.GRPCPort == 0 {
+		return 8080
+	}
+	return cfg.config.GRPCPort
 }
 
 // StartupSleepSeconds returns the startup sleep period
@@ -51,22 +54,7 @@ func (cfg *Config) Security() {}
 
 // LogLevel returns log-level for logger
 func (cfg *Config) LogLevel() int {
-	return cfg.config.Logging.Level
-}
-
-// LogTimeFormat returns log time format for logger
-func (cfg *Config) LogTimeFormat() string {
-	return cfg.config.Logging.TimeFormat
-}
-
-// DisableLogger disables logging for the service
-func (cfg *Config) DisableLogger() {
-	cfg.config.Logging.Disabled = true
-}
-
-// Logging returns a boolean that show whether logging is enabled or disabled
-func (cfg *Config) Logging() bool {
-	return !cfg.config.Logging.Disabled
+	return cfg.config.LogLevel
 }
 
 // Databases returns list of all databases options

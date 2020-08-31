@@ -2,109 +2,84 @@ package config
 
 import (
 	"flag"
-	"strconv"
-	"strings"
 )
 
 func (cfg *config) setConfigFromFlag() {
 	// Service section
 	serviceName := flag.String("service-name", "", "Name of the service")
-	servicePort := flag.String("service-port", "", "Port number to bind the service")
-	startupSleepSeconds := flag.Int("startup-sleep-sec", 0, "Sleep period before starting the app/service")
+	httPort := flag.Int("http-port", 80, "Port number to bind the service http server")
+	grpcPort := flag.Int("grpc-port", 8080, "Port number to bind to the service grpc server")
+	startupSleepSeconds := flag.Int("startup-sleep-sec", 5, "Sleep period before starting the app/service")
 
-	// RDBMS Database section
+	// SQL Database section
 	useDB := flag.Bool("use-db", false, "Use RDBMS(mysql) database")
 	dbORM := flag.String(
-		"sqldb-orm", "gorm",
-		"Object Relational Mapper (ORM) for querying database",
+		"sqldb-orm", "gorm", "Object Relational Mapper (ORM) for querying database",
 	)
 	dbDialect := flag.String(
-		"sqldb-dialect", "mysql",
-		"SQL dialect to use",
+		"sqldb-dialect", "mysql", "SQL dialect to use",
 	)
 	dbName := flag.String(
-		"sqldb-name", "",
-		"RDBMS database name e.g mysql, postgres ...",
+		"sqldb-name", "mysql", "SQL Database name e.g mysql, postgres ...",
 	)
 	dbAddress := flag.String(
-		"sqldb-address", "",
-		"RDBMS database address (can be ip address or domain name)",
+		"sqldb-address", "localhost:3306", "SQL Database address (can be ip address or domain name)",
 	)
 	dbUser := flag.String(
-		"sqldb-user", "",
-		"RDBMS database user",
+		"sqldb-user", "root", "SQL Database user",
 	)
 	dbUserFile := flag.String(
-		"sqldb-user-file", "",
-		"File location storing RDBMS database user",
+		"sqldb-user-file", "", "File location storing SQL Database user",
 	)
 	dbPassword := flag.String(
-		"sqldb-password", "",
-		"RDBMS database password",
+		"sqldb-password", "", "SQL Database password",
 	)
 	dbPasswordFile := flag.String(
-		"sqldb-password-file", "",
-		"File location storing RDBMS database password",
+		"sqldb-password-file", "", "File location storing SQL Database password",
 	)
 	dbSchema := flag.String(
-		"sqldb-schema", "",
-		"RDBMS database schema to use",
+		"sqldb-schema", "", "SQL Database schema to use",
 	)
 	dbSchemaFile := flag.String(
-		"sqldb-schema-file", "",
-		"File location storing RDBMS database schema name",
+		"sqldb-schema-file", "", "File location storing SQL Database schema name",
 	)
 
 	// Redis section
 	useRediSearch := flag.Bool(
-		"use-redisearch", false,
-		"Whether to use redis inverted search",
+		"use-redisearch", false, "Whether to use redis inverted search",
 	)
 	useRedis := flag.Bool(
-		"use-redis", false,
-		"Whether to use redis database",
+		"use-redis", false, "Whether to use redis database",
 	)
 	redisAddress := flag.String(
-		"redis-address", "",
-		"Redis address (can be ip address of domain name)",
+		"redis-address", "localhost:6379", "Redis address (can be ip address of domain name)",
 	)
 	redisUser := flag.String(
-		"redis-user", "",
-		"Redis user",
+		"redis-user", "", "Redis user",
 	)
 	redisUserFile := flag.String(
-		"redis-user-file", "",
-		"File location storing redis user name",
+		"redis-user-file", "", "File location storing redis user name",
 	)
 	redisPassword := flag.String(
-		"redis-password", "",
-		"Redis password",
+		"redis-password", "", "Redis password",
 	)
 	redisPasswordFile := flag.String(
-		"redis-password-file", "",
-		"File location storing redis password",
+		"redis-password-file", "", "File location storing redis password",
 	)
 
 	// Logging section
 	logLevel := flag.Int(
-		"log-level", 100,
-		"Global log level",
-	)
-	logTimeFormat := flag.String(
-		"log-time-format", "",
-		"Time format for logger e.g 2006-01-02T15:04:05Z07:00",
+		"log-level", -1, "Global log level",
 	)
 
 	// Service TLS certificate and key section
 	tlsCertFile := flag.String(
-		"tls-cert-file", "",
-		"File location to TLS certificate for the service",
+		"tls-cert-file", "", "File location to TLS certificate for the service",
 	)
 	tlsKeyFile := flag.String(
-		"tls-key-file", "",
-		"File location to TLS private key for the service",
+		"tls-key-file", "", "File location to TLS private key for the service",
 	)
-	serverName := flag.String("servername", "", "Subject Alternative Name for tls certificate")
+	serverName := flag.String("tls-servername", "localhost", "Subject Alternative Name for tls certificate")
 	insecure := flag.Bool("insecure", false, "Option for using insecure http")
 
 	flag.Parse()
@@ -113,20 +88,14 @@ func (cfg *config) setConfigFromFlag() {
 
 	// Service section
 	cfgFromFlag.ServiceName = *serviceName
-	if portStr := strings.TrimPrefix(*servicePort, ":"); portStr != "" {
-		port, err := strconv.Atoi(strings.TrimPrefix(portStr, ":"))
-		if err != nil {
-			panic("failed to parse service port")
-		}
-		cfgFromFlag.ServicePort = port
-	}
+	cfgFromFlag.HTTPort = *httPort
+	cfgFromFlag.GRPCPort = *grpcPort
 	cfgFromFlag.StartupSleepSeconds = *startupSleepSeconds
 
 	// logging section
 	if *logLevel <= 5 && *logLevel >= -1 {
-		cfgFromFlag.Logging.Level = *logLevel
+		cfgFromFlag.LogLevel = *logLevel
 	}
-	cfgFromFlag.Logging.TimeFormat = *logTimeFormat
 
 	// service security
 	cfgFromFlag.Security.TLSCertFile = *tlsCertFile

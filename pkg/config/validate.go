@@ -24,7 +24,7 @@ func (cfg *config) validate() error {
 	switch {
 	case strings.TrimSpace(cfg.ServiceName) == "":
 		return errors.New("service name is required")
-	case cfg.ServicePort == 0:
+	case cfg.HTTPort == 0:
 		return errors.New("service port is required")
 	}
 
