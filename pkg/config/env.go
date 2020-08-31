@@ -19,7 +19,7 @@ func (cfg *config) setConfigFromEnv() error {
 		if err != nil {
 			return errors.Wrapf(err, "failed to parse %s env to int", EnvServicePort)
 		}
-		cfgFromEnv.ServicePort = port
+		cfgFromEnv.HTTPort = port
 	}
 
 	// Logging
@@ -28,9 +28,8 @@ func (cfg *config) setConfigFromEnv() error {
 		if err != nil {
 			return errors.Wrapf(err, "failed to parse %s env to int", EnvLoggingLevel)
 		}
-		cfgFromEnv.Logging.Level = int(logLevelInt64)
+		cfgFromEnv.LogLevel = int(logLevelInt64)
 	}
-	cfgFromEnv.Logging.TimeFormat = strings.TrimSpace(os.Getenv(EnvLoggingTimeFormat))
 
 	// Service TLS certificate and private key
 	cfgFromEnv.Security.TLSCertFile = strings.TrimSpace(os.Getenv(EnvServiceTLSCertFile))
