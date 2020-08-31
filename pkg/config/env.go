@@ -13,20 +13,26 @@ func (cfg *config) setConfigFromEnv() error {
 	cfgFromEnv := newConfig()
 
 	// Service section
-	cfgFromEnv.ServiceName = strings.TrimSpace(os.Getenv(EnvServiceName))
-	if portStr := strings.TrimSpace(os.Getenv(EnvServicePort)); portStr != "" {
+	if portStr := strings.TrimSpace(os.Getenv(EnvHTTPPort)); portStr != "" {
 		port, err := strconv.Atoi(strings.TrimPrefix(portStr, ":"))
 		if err != nil {
-			return errors.Wrapf(err, "failed to parse %s env to int", EnvServicePort)
+			return errors.Wrapf(err, "failed to parse %s env to int", EnvHTTPPort)
 		}
 		cfgFromEnv.HTTPort = port
 	}
+	if portStr := strings.TrimSpace(os.Getenv(EnvGrpcPort)); portStr != "" {
+		port, err := strconv.Atoi(strings.TrimPrefix(portStr, ":"))
+		if err != nil {
+			return errors.Wrapf(err, "failed to parse %s env to int", EnvGrpcPort)
+		}
+		cfgFromEnv.GRPCPort = port
+	}
 
 	// Logging
-	if logLevel := strings.TrimSpace(os.Getenv(EnvLoggingLevel)); logLevel != "" {
+	if logLevel := strings.TrimSpace(os.Getenv(EnvLogLevel)); logLevel != "" {
 		logLevelInt64, err := strconv.Atoi(logLevel)
 		if err != nil {
-			return errors.Wrapf(err, "failed to parse %s env to int", EnvLoggingLevel)
+			return errors.Wrapf(err, "failed to parse %s env to int", EnvLogLevel)
 		}
 		cfgFromEnv.LogLevel = int(logLevelInt64)
 	}
