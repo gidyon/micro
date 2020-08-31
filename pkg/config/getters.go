@@ -16,6 +16,11 @@ func (cfg *Config) ServicePort() int {
 	return cfg.config.HTTPort
 }
 
+// ServiceType returns the type k8s service to be used for exposing the app
+func (cfg *Config) ServiceType() string {
+	return cfg.config.ServiceType
+}
+
 // GrpcPort returns the service grpc port
 func (cfg *Config) GrpcPort() int {
 	if cfg.config.GRPCPort == 0 {

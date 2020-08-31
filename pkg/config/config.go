@@ -51,6 +51,7 @@ type externalServiceOptions struct {
 // config contains configuration parameters, options and settings for a micro-service
 type config struct {
 	ServiceName         string                    `yaml:"serviceName"`
+	ServiceType         string                    `yaml:"serviceType"`
 	HTTPort             int                       `yaml:"httpPort"`
 	GRPCPort            int                       `yaml:"grpcPort"`
 	StartupSleepSeconds int                       `yaml:"startupSleepSeconds"`

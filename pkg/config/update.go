@@ -10,6 +10,7 @@ import (
 func (cfg *config) updateConfigWith(newCfg *config) {
 	// Set config only if zero value
 	cfg.ServiceName = setStringIfEmpty(cfg.ServiceName, newCfg.ServiceName)
+	cfg.ServiceType = setStringIfEmpty(cfg.ServiceType, newCfg.ServiceType)
 	cfg.HTTPort = setIntIfZero(cfg.HTTPort, newCfg.HTTPort)
 	cfg.StartupSleepSeconds = setIntIfZero(cfg.StartupSleepSeconds, newCfg.StartupSleepSeconds)
 

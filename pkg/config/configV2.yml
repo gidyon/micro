@@ -1,4 +1,5 @@
 serviceName: account
+serviceType: ClusterIp
 httpPort: 5600
 grpcPort: 5600
 logLevel: -1
