@@ -140,19 +140,8 @@ type RedisOptions struct {
 }
 
 // NewRedisClient opens a tcp connection to the redis database returning the client.
-func NewRedisClient(opt *RedisOptions) *redis.Client {
-	redisURL := func(a, b string) string {
-		if a == "" {
-			return b
-		}
-		return a
-	}
-
-	uri := fmt.Sprintf("%s:%s", opt.Address, strings.TrimPrefix(opt.Port, ":"))
-	return redis.NewClient(&redis.Options{
-		Network: "tcp",
-		Addr:    redisURL(uri, ":6379"),
-	})
+func NewRedisClient(opt *redis.Options) *redis.Client {
+	return redis.NewClient(opt)
 }
 
 // GRPCDialOptions contains parameters for dialing a remote grpc service
