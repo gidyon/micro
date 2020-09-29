@@ -28,7 +28,16 @@ func handleErr(err error) {
 	}
 }
 
-// Start opens connection to databases and external services, afterwards will start a grpc and http server for service.
+// Initialize initializes service without starting it.
+func (service *Service) Initialize(ctx context.Context) error {
+	handleErr(service.openDBConn(ctx))
+	handleErr(service.openRedisConn(ctx))
+	handleErr(service.openExternalConn(ctx))
+	handleErr(service.initGRPC(ctx))
+	return nil
+}
+
+// Start opens connection to databases and external services, afterwards starting grpc and http server to serve requests.
 func (service *Service) Start(ctx context.Context, initFn func() error) {
 	handleErr(service.openDBConn(ctx))
 	handleErr(service.openRedisConn(ctx))

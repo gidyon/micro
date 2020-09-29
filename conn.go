@@ -7,6 +7,7 @@ import (
 	"github.com/RediSearch/redisearch-go/redisearch"
 	"github.com/gidyon/micro/pkg/config"
 	"github.com/gidyon/micro/pkg/conn"
+	"github.com/go-redis/redis"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -64,11 +65,10 @@ func (service *Service) openRedisConn(ctx context.Context) error {
 			continue
 		}
 
-		vals := strings.Split(redisOptions.Address(), ":")
-
-		service.redisClients[redisOptions.Metadata().Name()] = conn.NewRedisClient(&conn.RedisOptions{
-			Address: vals[0],
-			Port:    vals[1],
+		service.redisClients[redisOptions.Metadata().Name()] = conn.NewRedisClient(&redis.Options{
+			Network:  "tcp",
+			Addr:     redisOptions.Address(),
+			Password: redisOptions.Password(),
 		})
 
 		if cfg.UseRediSearch() {
