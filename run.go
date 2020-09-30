@@ -96,7 +96,7 @@ func (service *Service) run(ctx context.Context) error {
 		if !service.cfg.ServiceTLSEnabled() {
 			service.logger.Infof(
 				"<GRPC> running on port %d (insecure), <REST> server running on port %d (insecure)",
-				service.cfg.GrpcPort(), service.cfg.ServicePort(),
+				service.cfg.GRPCPort(), service.cfg.ServicePort(),
 			)
 		} else {
 			service.logger.Infof(
@@ -109,7 +109,7 @@ func (service *Service) run(ctx context.Context) error {
 	logMsgFn()
 
 	if !service.cfg.ServiceTLSEnabled() {
-		glis, err := net.Listen("tcp", fmt.Sprintf(":%d", service.cfg.GrpcPort()))
+		glis, err := net.Listen("tcp", fmt.Sprintf(":%d", service.cfg.GRPCPort()))
 		if err != nil {
 			return errors.Wrap(err, "failed to create TCP listener for gRPC server")
 		}
@@ -176,10 +176,10 @@ func (service *Service) initGRPC(ctx context.Context) error {
 				"failed to create tls config for %s service", service.cfg.ServiceTLSServerName())
 		}
 		service.dialOptions = append(service.dialOptions, grpc.WithTransportCredentials(creds))
-		gPort = service.cfg.GrpcPort()
+		gPort = service.cfg.HTTPort()
 	} else {
 		service.dialOptions = append(service.dialOptions, grpc.WithInsecure())
-		gPort = service.cfg.GrpcPort() // for grpc
+		gPort = service.cfg.GRPCPort() // for grpc
 	}
 
 	// Enable wait for ready RPCs

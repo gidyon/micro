@@ -21,13 +21,13 @@ func (cfg *Config) ServiceType() string {
 	return cfg.config.ServiceType
 }
 
-// GrpcPort returns the service grpc port or 8080 if no port was is specifiedin config
-func (cfg *Config) GrpcPort() int {
+// GRPCPort returns the service grpc port or 8080 if no port was is specifiedin config
+func (cfg *Config) GRPCPort() int {
 	if cfg.config.GRPCPort == 0 {
 		return 8080
 	}
 
-	return cfg.GRPCPort
+	return cfg.config.GRPCPort
 }
 
 // HTTPort returns the http port for service
