@@ -2,6 +2,7 @@ package micro
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"net"
 	"net/http"
@@ -14,6 +15,7 @@ import (
 
 	"github.com/gidyon/micro/pkg/conn"
 	http_middleware "github.com/gidyon/micro/pkg/http"
+	"github.com/gidyon/micro/utils/tlsutil"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/pkg/errors"
@@ -122,8 +124,20 @@ func (service *Service) run(ctx context.Context) error {
 		return httpServer.Serve(lis)
 	}
 
+	cert, certPool, err := tlsutil.GetCert(service.Config().ServiceTLSCertFile(), service.Config().ServiceTLSKeyFile())
+	if err != nil {
+		return err
+	}
+
+	tlsConfig := &tls.Config{
+		ClientAuth:   tls.VerifyClientCertIfGiven,
+		ClientCAs:    certPool,
+		Certificates: []tls.Certificate{*cert},
+		NextProtos:   []string{"h2"},
+	}
+
 	// Serve tls
-	return httpServer.ServeTLS(lis, service.Config().ServiceTLSCertFile(), service.Config().ServiceTLSKeyFile())
+	return httpServer.Serve(tls.NewListener(lis, tlsConfig))
 }
 
 // grpcHandlerFunc returns an http.Handler that delegates to grpcServer on incoming gRPC
