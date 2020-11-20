@@ -17,7 +17,7 @@ import (
 	http_middleware "github.com/gidyon/micro/pkg/http"
 	"github.com/gidyon/micro/utils/tlsutil"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
-	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/reflection"
 
@@ -168,10 +168,7 @@ func (service *Service) initGRPC(ctx context.Context) error {
 			append(
 				service.serveMuxOptions, runtime.WithMarshalerOption(
 					runtime.MIMEWildcard,
-					&runtime.JSONPb{
-						OrigName:     true,
-						EmitDefaults: true,
-					},
+					&runtime.JSONPb{},
 				),
 			)...,
 		)...,

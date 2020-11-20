@@ -18,9 +18,8 @@ import (
 
 	"net/http"
 
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"google.golang.org/grpc"
-
-	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 )
 
 // Service contains API clients, connections and options for bootstrapping a micro-service.
@@ -324,10 +323,7 @@ func newRuntimeMux() *runtime.ServeMux {
 	return runtime.NewServeMux(
 		runtime.WithMarshalerOption(
 			runtime.MIMEWildcard,
-			&runtime.JSONPb{
-				OrigName:     true,
-				EmitDefaults: false,
-			},
+			&runtime.JSONPb{},
 		),
 	)
 }
