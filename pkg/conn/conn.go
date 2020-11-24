@@ -14,7 +14,7 @@ import (
 
 	"strings"
 
-	"github.com/go-redis/redis"
+	redis "github.com/go-redis/redis/v8"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"gorm.io/gorm"

@@ -102,7 +102,7 @@ func RegisterProbe(opt *ProbeOptions) http.HandlerFunc {
 
 		if cfg.UseRedis() {
 			// Ping redis connection
-			statusCMD := service.RedisClient().Ping()
+			statusCMD := service.RedisClient().Ping(ctx)
 			if err := statusCMD.Err(); err != nil {
 				errMsg = fmt.Sprintf("failed to check redis health: %v", err)
 				errs = append(errs, errMsg)

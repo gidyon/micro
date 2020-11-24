@@ -8,7 +8,7 @@ import (
 	"github.com/RediSearch/redisearch-go/redisearch"
 	"github.com/gidyon/micro/pkg/config"
 	"github.com/gidyon/micro/pkg/conn"
-	"github.com/go-redis/redis"
+	redis "github.com/go-redis/redis/v8"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
