@@ -3,6 +3,7 @@ package micro
 import (
 	"context"
 	"strings"
+	"time"
 
 	"github.com/RediSearch/redisearch-go/redisearch"
 	"github.com/gidyon/micro/pkg/config"
@@ -66,9 +67,14 @@ func (service *Service) openRedisConn(ctx context.Context) error {
 		}
 
 		service.redisClients[redisOptions.Metadata().Name()] = conn.NewRedisClient(&redis.Options{
-			Network:  "tcp",
-			Addr:     redisOptions.Address(),
-			Password: redisOptions.Password(),
+			Network:      "tcp",
+			Addr:         redisOptions.Address(),
+			Password:     redisOptions.Password(),
+			MaxRetries:   5,
+			ReadTimeout:  time.Minute,
+			WriteTimeout: time.Minute,
+			MinIdleConns: 10,
+			MaxConnAge:   time.Hour,
 		})
 
 		if cfg.UseRediSearch() {
