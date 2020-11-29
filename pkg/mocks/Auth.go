@@ -1,6 +1,8 @@
 package mocks
 
 import (
+	"context"
+
 	"github.com/gidyon/micro/pkg/grpc/auth"
 	"github.com/gidyon/micro/pkg/mocks/mocks"
 	"github.com/stretchr/testify/mock"
@@ -15,6 +17,8 @@ type AuthAPIMock interface {
 var AuthAPI = &mocks.AuthAPIMock{}
 
 func init() {
+	AuthAPI.On("AuthFunc", mock.Anything).
+		Return(context.Background(), nil)
 	AuthAPI.On("AuthenticateRequestV2", mock.Anything).
 		Return(&auth.Payload{Group: auth.AdminGroup()}, nil)
 	AuthAPI.On("AuthenticateRequest", mock.Anything).
