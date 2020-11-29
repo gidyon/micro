@@ -2,7 +2,7 @@ package mocks
 
 import (
 	"github.com/gidyon/micro/pkg/grpc/auth"
-	"github.com/gidyon/services/pkg/mocks/mocks"
+	"github.com/gidyon/micro/pkg/mocks/mocks"
 	"github.com/stretchr/testify/mock"
 )
 
