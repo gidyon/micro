@@ -7,6 +7,5 @@ func NewHasher(salt string) (*hashids.HashID, error) {
 	hd := hashids.NewData()
 	hd.Salt = salt
 	hd.MinLength = 30
-
 	return hashids.NewWithData(hd)
 }
