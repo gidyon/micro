@@ -56,6 +56,7 @@ type API interface {
 	AuthorizeStrict(ctx context.Context, actorID string, allowedGroups ...string) (*Payload, error)
 	AuthorizeActorOrGroups(ctx context.Context, actorID string, allowedGroups ...string) (*Payload, error)
 	GenToken(context.Context, *Payload, time.Time) (string, error)
+	GetJwtPayload(context.Context) (*Payload, error)
 	AuthFunc(context.Context) (context.Context, error)
 }
 
@@ -88,11 +89,21 @@ func NewAPI(signingKey []byte, issuer, audience string) (API, error) {
 	return api, nil
 }
 
+func (api *authAPI) GetJwtPayload(ctx context.Context) (*Payload, error) {
+	tokenInfo, ok := ctx.Value(ctxKey).(*Claims)
+	if !ok {
+		return nil, errs.WrapMessage(codes.Unauthenticated, "no claims found in token")
+	}
+
+	return tokenInfo.Payload, nil
+}
+
 func (api *authAPI) AuthenticateRequestV2(ctx context.Context) (*Payload, error) {
 	claims, err := api.ParseFromCtx(ctx)
 	if err != nil {
 		return nil, err
 	}
+
 	return claims.Payload, nil
 }
 
@@ -101,12 +112,13 @@ func (api *authAPI) AuthenticateRequest(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
 func (api *authAPI) AuthorizeActor(ctx context.Context, actorID string) (*Payload, error) {
 	// Get user claims from token
-	claims, ok := ctx.Value(CtxKey).(*Claims)
+	claims, ok := ctx.Value(ctxKey).(*Claims)
 	if !ok {
 		return nil, errs.WrapMessage(codes.Unauthenticated, "no claims found")
 	}
@@ -120,7 +132,7 @@ func (api *authAPI) AuthorizeActor(ctx context.Context, actorID string) (*Payloa
 
 func (api *authAPI) AuthorizeActors(ctx context.Context, actorIDs ...string) (*Payload, error) {
 	// Get user claims from token
-	claims, ok := ctx.Value(CtxKey).(*Claims)
+	claims, ok := ctx.Value(ctxKey).(*Claims)
 	if !ok {
 		return nil, errs.WrapMessage(codes.Unauthenticated, "no claims found")
 	}
@@ -136,7 +148,7 @@ func (api *authAPI) AuthorizeActors(ctx context.Context, actorIDs ...string) (*P
 
 func (api *authAPI) AuthorizeGroups(ctx context.Context, allowedGroups ...string) (*Payload, error) {
 	// Get user claims from token
-	claims, ok := ctx.Value(CtxKey).(*Claims)
+	claims, ok := ctx.Value(ctxKey).(*Claims)
 	if !ok {
 		return nil, errs.WrapMessage(codes.Unauthenticated, "no claims found")
 	}
@@ -151,7 +163,7 @@ func (api *authAPI) AuthorizeGroups(ctx context.Context, allowedGroups ...string
 
 func (api *authAPI) AuthorizeStrict(ctx context.Context, actorID string, allowedGroups ...string) (*Payload, error) {
 	// Get user claims from token
-	claims, ok := ctx.Value(CtxKey).(*Claims)
+	claims, ok := ctx.Value(ctxKey).(*Claims)
 	if !ok {
 		return nil, errs.WrapMessage(codes.Unauthenticated, "no claims found")
 	}
@@ -172,7 +184,7 @@ func (api *authAPI) AuthorizeActorOrGroups(
 	ctx context.Context, actorID string, allowedGroups ...string,
 ) (*Payload, error) {
 	// Get user claims from token
-	claims, ok := ctx.Value(CtxKey).(*Claims)
+	claims, ok := ctx.Value(ctxKey).(*Claims)
 	if !ok {
 		return nil, errs.WrapMessage(codes.Unauthenticated, "no claims found")
 	}
@@ -209,8 +221,8 @@ func userClaimFromToken(tokenInfo *Claims) *Payload {
 
 type tokenInfo string
 
-// CtxKey holds the context key containing the token information
-const CtxKey = tokenInfo("tokenInfo")
+// ctxKey holds the context key containing the token information
+const ctxKey = tokenInfo("tokenInfo")
 
 func (api *authAPI) AuthFunc(ctx context.Context) (context.Context, error) {
 	token, err := grpc_auth.AuthFromMD(ctx, "bearer")
@@ -225,7 +237,7 @@ func (api *authAPI) AuthFunc(ctx context.Context) (context.Context, error) {
 
 	grpc_ctxtags.Extract(ctx).Set("auth.sub", userClaimFromToken(tokenInfo))
 
-	return context.WithValue(ctx, CtxKey, tokenInfo), nil
+	return context.WithValue(ctx, ctxKey, tokenInfo), nil
 }
 
 // AddMD adds metadata to token
