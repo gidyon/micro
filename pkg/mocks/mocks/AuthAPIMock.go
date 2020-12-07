@@ -240,3 +240,26 @@ func (_m *AuthAPIMock) GenToken(_a0 context.Context, _a1 *auth.Payload, _a2 time
 
 	return r0, r1
 }
+
+// GetJwtPayload provides a mock function with given fields: _a0
+func (_m *AuthAPIMock) GetJwtPayload(_a0 context.Context) (*auth.Payload, error) {
+	ret := _m.Called(_a0)
+
+	var r0 *auth.Payload
+	if rf, ok := ret.Get(0).(func(context.Context) *auth.Payload); ok {
+		r0 = rf(_a0)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*auth.Payload)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = rf(_a0)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
