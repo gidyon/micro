@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/Pallinder/go-randomdata"
-	"github.com/gidyon/services/pkg/utils/errs"
+	"github.com/gidyon/micro/utils/errs"
 
 	"github.com/dgrijalva/jwt-go"
 	"google.golang.org/grpc/codes"
