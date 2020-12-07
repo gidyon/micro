@@ -3,7 +3,6 @@ package errs
 import (
 	"fmt"
 
-	"github.com/gidyon/services/pkg/api/usererror"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -141,15 +140,6 @@ func FailedToExecuteTemplate(err error) error {
 // FailedToGetToken wraps the error returned while getting token to a status error
 func FailedToGetToken(err error) error {
 	return status.Errorf(codes.Internal, "failed to get token: %v", err)
-}
-
-// WrapUserError adds user facing message as details to error
-func WrapUserError(err error, userMsg string) error {
-	s, err := status.New(status.Code(err), userMsg).WithDetails(&usererror.Error{ErrorMessage: userMsg})
-	if err != nil {
-		return err
-	}
-	return s.Err()
 }
 
 // WrapErrorWithCode is a wraps generic error to a status error with provided code
