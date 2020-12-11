@@ -1,16 +1,15 @@
 package healthcheck
 
 import (
-	"context"
+	"database/sql"
 	"fmt"
 	"net/http"
 	"sync"
-	"time"
 
 	"github.com/gidyon/micro"
-	"github.com/gidyon/micro/pkg/conn"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
+	"github.com/gidyon/micro/pkg/config"
+	"github.com/go-redis/redis/v8"
+	"gorm.io/gorm"
 )
 
 const (
@@ -69,10 +68,18 @@ func RegisterProbe(opt *ProbeOptions) http.HandlerFunc {
 		}()
 
 		var (
-			mu     = &sync.Mutex{}
-			errMsg string
-			errs   = make([]string, 0)
+			mu   = &sync.Mutex{}
+			errs = make([]string, 0)
+			wg   = &sync.WaitGroup{}
+			ctx  = r.Context()
+			err  error
 		)
+
+		appendError := func(errMsg string) {
+			mu.Lock()
+			errs = append(errs, errMsg)
+			mu.Unlock()
+		}
 
 		if serviceNil {
 			w.WriteHeader(http.StatusExpectationFailed)
@@ -86,75 +93,85 @@ func RegisterProbe(opt *ProbeOptions) http.HandlerFunc {
 			return
 		}
 
-		ctx := r.Context()
+		// Check sql db connection
+		if len(service.SQLDBs()) > 0 {
+			for _, sqlDB := range service.SQLDBs() {
+				wg.Add(1)
 
-		nCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
-		defer cancel()
+				go func(sqlDB *sql.DB) {
+					defer wg.Done()
 
-		if cfg.UseSQLDatabase() {
-			// Test DB connection
-			err := opt.AutoMigrator()
-			if err != nil {
-				errMsg = fmt.Sprintf("failed to check database health: %v", err)
-				errs = append(errs, errMsg)
+					err = sqlDB.Ping()
+					if err != nil {
+						appendError(fmt.Sprintf("failed to ping sql database: %v", err))
+						return
+					}
+				}(sqlDB)
 			}
 		}
 
-		if cfg.UseRedis() {
-			// Ping redis connection
-			statusCMD := service.RedisClient().Ping(ctx)
-			if err := statusCMD.Err(); err != nil {
-				errMsg = fmt.Sprintf("failed to check redis health: %v", err)
-				errs = append(errs, errMsg)
+		// Check gorm db connection
+		if len(service.GormDBs()) > 0 {
+			for _, gormDB := range service.GormDBs() {
+				wg.Add(1)
+
+				go func(gormDB *gorm.DB) {
+					defer wg.Done()
+
+					sqlDB, err := gormDB.DB()
+					if err != nil {
+						appendError(fmt.Sprintf("failed to get sql database from gorm: %v", err))
+						return
+					}
+
+					err = sqlDB.Ping()
+					if err != nil {
+						appendError(fmt.Sprintf("failed to ping sql database: %v", err))
+						return
+					}
+				}(gormDB)
 			}
 		}
 
-		wg := &sync.WaitGroup{}
+		// Check redis db connection
+		if len(service.RedisClients()) > 0 {
+			for _, redisClient := range service.RedisClients() {
+				wg.Add(1)
+
+				go func(redisClient *redis.Client) {
+					defer wg.Done()
+
+					statusCMD := redisClient.Ping(ctx)
+					if err := statusCMD.Err(); err != nil {
+						appendError(fmt.Sprintf("failed to ping redis: %v", err))
+						return
+					}
+				}(redisClient)
+			}
+		}
 
 		// check external services
 		for _, extSrv := range cfg.ExternalServices() {
 			if !extSrv.Required() {
 				continue
 			}
+
 			wg.Add(1)
-			extSrv := extSrv
+
 			// dials concurrently
-			go func() {
+			go func(extSrv *config.ServiceInfo) {
 				defer wg.Done()
 
-				dopts := make([]grpc.DialOption, 0)
-
-				if !extSrv.Insecure() {
-					creds, err := credentials.NewClientTLSFromFile(extSrv.TLSCertFile(), extSrv.ServerName())
-					if err != nil {
-						mu.Lock()
-						errMsg = fmt.Sprintf("failed to create tls config for %s service: %v", extSrv.Name(), err)
-						errs = append(errs, errMsg)
-						mu.Unlock()
-					}
-					dopts = append(dopts, grpc.WithTransportCredentials(creds))
-				} else {
-					dopts = append(dopts, grpc.WithInsecure())
-				}
-
-				cc, err := conn.DialService(nCtx, &conn.GRPCDialOptions{
-					ServiceName: extSrv.Name(),
-					Address:     extSrv.Address(),
-					K8Service:   extSrv.K8Service(),
-					DialOptions: dopts,
-				})
+				cc, err := service.DialExternalService(ctx, extSrv.Name())
 				if err != nil {
-					mu.Lock()
-					errMsg = fmt.Sprintf("failed to connect to %s service: %v", extSrv.Name(), err)
-					errs = append(errs, errMsg)
-					mu.Unlock()
+					appendError(fmt.Sprintf("failed to connect to %s service: %v", extSrv.Name(), err))
 				} else {
 					defer cc.Close()
 				}
-			}()
+			}(extSrv)
 		}
 
-		// wait until all dials complete
+		// wait for all dials and pings to complete
 		wg.Wait()
 
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
