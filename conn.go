@@ -9,9 +9,9 @@ import (
 	"github.com/gidyon/micro/pkg/config"
 	"github.com/gidyon/micro/pkg/conn"
 	redis "github.com/go-redis/redis/v8"
-	"github.com/pkg/errors"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
 )
 
 func (service *Service) openDBConn(ctx context.Context) error {
@@ -21,38 +21,46 @@ func (service *Service) openDBConn(ctx context.Context) error {
 		if sqlDBInfo.Type != config.SQLDBType || !sqlDBInfo.Required() {
 			continue
 		}
-		if sqlDBInfo.UseGorm() {
-			gormDB, err := conn.OpenGormConn(&conn.DBOptions{
-				Dialect:  sqlDBInfo.SQLDatabaseDialect(),
-				Address:  sqlDBInfo.Address(),
-				User:     sqlDBInfo.User(),
-				Password: sqlDBInfo.Password(),
-				Schema:   sqlDBInfo.Schema(),
-				ConnPool: service.dbPoolOptions[sqlDBInfo.Metadata().Name()],
-			})
-			if err != nil {
-				return err
-			}
-
-			service.gormDBs[sqlDBInfo.Metadata().Name()] = gormDB
-		} else {
-			sqlDB, err := conn.ToSQLDB(&conn.DBOptions{
-				Dialect:  sqlDBInfo.SQLDatabaseDialect(),
-				Address:  sqlDBInfo.Address(),
-				User:     sqlDBInfo.User(),
-				Password: sqlDBInfo.Password(),
-				Schema:   sqlDBInfo.Schema(),
-			})
-			if err != nil {
-				return err
-			}
-
-			service.sqlDBs[sqlDBInfo.Metadata().Name()] = sqlDB
-
-			service.shutdowns = append(service.shutdowns, func() {
-				sqlDB.Close()
-			})
+		// open sql connection
+		sqlDB, err := conn.ToSQLDB(&conn.DBOptions{
+			Dialect:  sqlDBInfo.SQLDatabaseDialect(),
+			Address:  sqlDBInfo.Address(),
+			User:     sqlDBInfo.User(),
+			Password: sqlDBInfo.Password(),
+			Schema:   sqlDBInfo.Schema(),
+			ConnPool: service.dbPoolOptions[sqlDBInfo.Metadata().Name()],
+		})
+		if err != nil {
+			return err
 		}
+
+		service.sqlDBs[sqlDBInfo.Metadata().Name()] = sqlDB
+
+		var gormDB *gorm.DB
+		// open gorm connection
+		switch strings.ToLower(sqlDBInfo.SQLDatabaseDialect()) {
+		case "postgres":
+			// gormDB, err = gorm.Open(postgres.New(postgres.Config{
+			// 	Conn: sqlDB,
+			// }), &gorm.Config{})
+			// if err != nil {
+			// 	return err
+			// }
+		default:
+			// mysql connection
+			gormDB, err = gorm.Open(mysql.New(mysql.Config{
+				Conn: sqlDB,
+			}), &gorm.Config{})
+			if err != nil {
+				return err
+			}
+		}
+
+		service.gormDBs[sqlDBInfo.Metadata().Name()] = gormDB
+
+		service.shutdowns = append(service.shutdowns, func() {
+			sqlDB.Close()
+		})
 	}
 
 	return nil
@@ -100,36 +108,18 @@ func (service *Service) openExternalConn(ctx context.Context) error {
 
 	// Remote services
 	for _, srv := range cfg.ExternalServices() {
+		srv := srv
 		if !srv.Required() {
 			continue
 		}
 
-		dopts := make([]grpc.DialOption, 0)
-
-		if !srv.Insecure() {
-			creds, err := credentials.NewClientTLSFromFile(srv.TLSCertFile(), srv.ServerName())
-			if err != nil {
-				return errors.Wrapf(err, "failed to create tls config for %s service", srv.Name())
-			}
-			dopts = append(dopts, grpc.WithTransportCredentials(creds))
-		} else {
-			dopts = append(dopts, grpc.WithInsecure())
-		}
-
-		serviceName := strings.ToLower(srv.Name())
-
-		externalServices[serviceName], err = conn.DialService(ctx, &conn.GRPCDialOptions{
-			ServiceName: srv.Name(),
-			Address:     srv.Address(),
-			K8Service:   srv.K8Service(),
-			DialOptions: dopts,
-		})
+		externalServices[srv.Name()], err = service.DialExternalService(ctx, srv.Name())
 		if err != nil {
-			return errors.Wrapf(err, "failed to create connection to service %s", srv.Name())
+			return err
 		}
 
 		service.shutdowns = append(service.shutdowns, func() {
-			externalServices[serviceName].Close()
+			externalServices[srv.Name()].Close()
 		})
 	}
 
