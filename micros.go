@@ -233,6 +233,11 @@ func (service *Service) GormDBByName(name string) *gorm.DB {
 	return service.gormDBs[name]
 }
 
+// GormDBs returns the underlying map for gorm dbs
+func (service *Service) GormDBs() map[string]*gorm.DB {
+	return service.gormDBs
+}
+
 // SQLDB returns the first database/sql db with name "mysql"
 func (service *Service) SQLDB() *sql.DB {
 	return service.sqlDBs["mysql"]
@@ -241,6 +246,11 @@ func (service *Service) SQLDB() *sql.DB {
 // SQLDBByName returns the first database/sql db with given name
 func (service *Service) SQLDBByName(name string) *sql.DB {
 	return service.sqlDBs[name]
+}
+
+// SQLDBs returns the underlying map for sql dbs
+func (service *Service) SQLDBs() map[string]*sql.DB {
+	return service.sqlDBs
 }
 
 // RedisClient returns the first redis client with name "redis"
@@ -261,6 +271,11 @@ func (service *Service) RediSearchClient() *redisearch.Client {
 // RediSearchClientByName returns the first redisearch client with given name
 func (service *Service) RediSearchClientByName(name string) *redisearch.Client {
 	return service.rediSearchClients[name]
+}
+
+// RedisClients returns the underlying map for redis client
+func (service *Service) RedisClients() map[string]*redis.Client {
+	return service.redisClients
 }
 
 // DialExternalService grpc dials to an external service
