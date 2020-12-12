@@ -14,6 +14,7 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/grpclog"
+	"google.golang.org/protobuf/encoding/protojson"
 	"gorm.io/gorm"
 
 	"net/http"
@@ -338,7 +339,11 @@ func newRuntimeMux() *runtime.ServeMux {
 	return runtime.NewServeMux(
 		runtime.WithMarshalerOption(
 			runtime.MIMEWildcard,
-			&runtime.JSONPb{},
+			&runtime.JSONPb{
+				MarshalOptions: protojson.MarshalOptions{
+					EmitUnpopulated: true,
+				},
+			},
 		),
 	)
 }
