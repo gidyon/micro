@@ -162,23 +162,14 @@ func (service *Service) initGRPC(ctx context.Context) error {
 	}
 
 	// Apply servemux options to runtime muxer
-	service.runtimeMux = runtime.NewServeMux(
-		append(
-			[]runtime.ServeMuxOption{},
-			append(
-				service.serveMuxOptions, runtime.WithMarshalerOption(
-					runtime.MIMEWildcard,
-					&runtime.JSONPb{},
-				),
-			)...,
-		)...,
-	)
+	service.runtimeMux = runtime.NewServeMux(service.serveMuxOptions...)
 
 	// ============================= Initialize grpc proxy client =============================
 	var (
 		gPort int
 		err   error
 	)
+
 	if service.cfg.ServiceTLSEnabled() {
 		creds, err := credentials.NewClientTLSFromFile(
 			service.cfg.ServiceTLSCertFile(), service.cfg.ServiceTLSServerName())
