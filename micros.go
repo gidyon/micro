@@ -82,7 +82,7 @@ func NewService(ctx context.Context, cfg *config.Config, grpcLogger grpclog.Logg
 		rediSearchClients:        make(map[string]*redisearch.Client),
 		httpMiddlewares:          make([]http_middleware.Middleware, 0),
 		httpMux:                  http.NewServeMux(),
-		runtimeMux:               newRuntimeMux(&Service{}),
+		runtimeMux:               runtime.NewServeMux(),
 		serveMuxOptions:          make([]runtime.ServeMuxOption, 0),
 		serverOptions:            make([]grpc.ServerOption, 0),
 		unaryInterceptors:        make([]grpc.UnaryServerInterceptor, 0),
@@ -281,18 +281,6 @@ func (service *Service) RedisClients() map[string]*redis.Client {
 	return service.redisClients
 }
 
-// OverrideJSONMarshalOptions overrides JSON marshaling options for ServeMux
-func (service *Service) OverrideJSONMarshalOptions(opt protojson.MarshalOptions) {
-	service.jsonMarshalOptions = opt
-	service.runtimeMux = newRuntimeMux(service)
-}
-
-// OverrideJSONUnMarshalOptions overrides JSON unmarshaling options for ServeMux
-func (service *Service) OverrideJSONUnMarshalOptions(opt protojson.UnmarshalOptions) {
-	service.jsonUnmarshalOptions = opt
-	service.runtimeMux = newRuntimeMux(service)
-}
-
 // DialExternalService grpc dials to an external service
 func (service *Service) DialExternalService(
 	ctx context.Context, serviceName string, dialOptions ...grpc.DialOption,
@@ -346,17 +334,4 @@ func (service *Service) SetHTTPServerReadTimout(sec int) {
 // SetHTTPServerWriteTimout sets the write timeout for the http server
 func (service *Service) SetHTTPServerWriteTimout(sec int) {
 	service.httpServerWriteTimeout = sec
-}
-
-// creates a http Muxer using runtime.NewServeMux
-func newRuntimeMux(srv *Service) *runtime.ServeMux {
-	return runtime.NewServeMux(
-		runtime.WithMarshalerOption(
-			runtime.MIMEWildcard,
-			&runtime.JSONPb{
-				MarshalOptions:   srv.jsonMarshalOptions,
-				UnmarshalOptions: srv.jsonUnmarshalOptions,
-			},
-		),
-	)
 }
