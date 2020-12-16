@@ -36,6 +36,8 @@ type Service struct {
 	httpMiddlewares          []http_middleware.Middleware
 	httpMux                  *http.ServeMux
 	runtimeMux               *runtime.ServeMux
+	jsonMarshalOptions       protojson.MarshalOptions
+	jsonUnmarshalOptions     protojson.UnmarshalOptions
 	clientConn               *grpc.ClientConn
 	gRPCServer               *grpc.Server
 	externalServicesConn     map[string]*grpc.ClientConn
@@ -80,7 +82,7 @@ func NewService(ctx context.Context, cfg *config.Config, grpcLogger grpclog.Logg
 		rediSearchClients:        make(map[string]*redisearch.Client),
 		httpMiddlewares:          make([]http_middleware.Middleware, 0),
 		httpMux:                  http.NewServeMux(),
-		runtimeMux:               &runtime.ServeMux{},
+		runtimeMux:               newRuntimeMux(&Service{}),
 		serveMuxOptions:          make([]runtime.ServeMuxOption, 0),
 		serverOptions:            make([]grpc.ServerOption, 0),
 		unaryInterceptors:        make([]grpc.UnaryServerInterceptor, 0),
@@ -279,6 +281,18 @@ func (service *Service) RedisClients() map[string]*redis.Client {
 	return service.redisClients
 }
 
+// OverrideJSONMarshalOptions overrides JSON marshaling options for ServeMux
+func (service *Service) OverrideJSONMarshalOptions(opt protojson.MarshalOptions) {
+	service.jsonMarshalOptions = opt
+	service.runtimeMux = newRuntimeMux(service)
+}
+
+// OverrideJSONUnMarshalOptions overrides JSON unmarshaling options for ServeMux
+func (service *Service) OverrideJSONUnMarshalOptions(opt protojson.UnmarshalOptions) {
+	service.jsonUnmarshalOptions = opt
+	service.runtimeMux = newRuntimeMux(service)
+}
+
 // DialExternalService grpc dials to an external service
 func (service *Service) DialExternalService(
 	ctx context.Context, serviceName string, dialOptions ...grpc.DialOption,
@@ -335,14 +349,13 @@ func (service *Service) SetHTTPServerWriteTimout(sec int) {
 }
 
 // creates a http Muxer using runtime.NewServeMux
-func newRuntimeMux() *runtime.ServeMux {
+func newRuntimeMux(srv *Service) *runtime.ServeMux {
 	return runtime.NewServeMux(
 		runtime.WithMarshalerOption(
 			runtime.MIMEWildcard,
 			&runtime.JSONPb{
-				MarshalOptions: protojson.MarshalOptions{
-					EmitUnpopulated: true,
-				},
+				MarshalOptions:   srv.jsonMarshalOptions,
+				UnmarshalOptions: srv.jsonUnmarshalOptions,
 			},
 		),
 	)
