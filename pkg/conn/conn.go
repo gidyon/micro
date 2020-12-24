@@ -45,7 +45,12 @@ func OpenGormConn(opt *DBOptions) (*gorm.DB, error) {
 	return ToSQLDBUsingORM(opt)
 }
 
-// ToSQLDBUsingORM opens a connection to a SQL database returning the gorm database client
+// OpenSQLDBConn open a sql connection to the database
+func OpenSQLDBConn(opt *DBOptions) (*sql.DB, error) {
+	return ToSQLDB(opt)
+}
+
+// ToSQLDBUsingORM opens a connection to SQL database returning the gorm database client
 func ToSQLDBUsingORM(opt *DBOptions) (*gorm.DB, error) {
 	// Options should not be nil
 	if opt == nil {
@@ -90,7 +95,7 @@ func ToSQLDBUsingORM(opt *DBOptions) (*gorm.DB, error) {
 	return db, nil
 }
 
-// ToSQLDB opens a connection to an SQL database returning the database client
+// ToSQLDB opens a connection to SQL database returning the database client
 func ToSQLDB(opt *DBOptions) (*sql.DB, error) {
 	// Options should not be nil
 	if opt == nil {
@@ -133,12 +138,6 @@ func ToSQLDB(opt *DBOptions) (*sql.DB, error) {
 	}
 
 	return sqlDB, nil
-}
-
-// RedisOptions contains parameters for connecting to a redis database
-type RedisOptions struct {
-	Address string
-	Port    string
 }
 
 // NewRedisClient opens a tcp connection to the redis database returning the client.
