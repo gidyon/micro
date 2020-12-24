@@ -32,7 +32,7 @@ func handleErr(err error) {
 
 // Initialize initializes service without starting it.
 func (service *Service) Initialize(ctx context.Context) error {
-	handleErr(service.openDBConn(ctx))
+	handleErr(service.openSQLDBConn(ctx))
 	handleErr(service.openRedisConn(ctx))
 	handleErr(service.openExternalConn(ctx))
 	handleErr(service.initGRPC(ctx))
@@ -41,7 +41,7 @@ func (service *Service) Initialize(ctx context.Context) error {
 
 // Start opens connection to databases and external services, afterwards starting grpc and http server to serve requests.
 func (service *Service) Start(ctx context.Context, initFn func() error) {
-	handleErr(service.openDBConn(ctx))
+	handleErr(service.openSQLDBConn(ctx))
 	handleErr(service.openRedisConn(ctx))
 	handleErr(service.openExternalConn(ctx))
 	handleErr(service.initGRPC(ctx))
@@ -181,7 +181,7 @@ func (service *Service) initGRPC(ctx context.Context) error {
 		gPort = service.cfg.HTTPort()
 	} else {
 		service.dialOptions = append(service.dialOptions, grpc.WithInsecure())
-		gPort = service.cfg.GRPCPort() // for grpc
+		gPort = service.cfg.GRPCPort()
 	}
 
 	// Enable wait for ready RPCs
