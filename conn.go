@@ -11,41 +11,45 @@ import (
 	redis "github.com/go-redis/redis/v8"
 	"google.golang.org/grpc"
 	"gorm.io/driver/mysql"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
-func (service *Service) openDBConn(ctx context.Context) error {
+func (service *Service) openSQLDBConn(ctx context.Context) error {
 	var cfg = service.cfg
 
 	for _, sqlDBInfo := range cfg.Databases() {
 		if sqlDBInfo.Type != config.SQLDBType || !sqlDBInfo.Required() {
 			continue
 		}
+
+		clientName := sqlDBInfo.Metadata().Name()
+
 		// open sql connection
-		sqlDB, err := conn.ToSQLDB(&conn.DBOptions{
+		sqlDB, err := conn.OpenSQLDBConn(&conn.DBOptions{
 			Dialect:  sqlDBInfo.SQLDatabaseDialect(),
 			Address:  sqlDBInfo.Address(),
 			User:     sqlDBInfo.User(),
 			Password: sqlDBInfo.Password(),
 			Schema:   sqlDBInfo.Schema(),
-			ConnPool: service.dbPoolOptions[sqlDBInfo.Metadata().Name()],
+			ConnPool: service.dbPoolOptions[clientName],
 		})
 		if err != nil {
 			return err
 		}
 
-		service.sqlDBs[sqlDBInfo.Metadata().Name()] = sqlDB
+		service.sqlDBs[clientName] = sqlDB
 
 		var gormDB *gorm.DB
 		// open gorm connection
 		switch strings.ToLower(sqlDBInfo.SQLDatabaseDialect()) {
 		case "postgres":
-			// gormDB, err = gorm.Open(postgres.New(postgres.Config{
-			// 	Conn: sqlDB,
-			// }), &gorm.Config{})
-			// if err != nil {
-			// 	return err
-			// }
+			gormDB, err = gorm.Open(postgres.New(postgres.Config{
+				Conn: sqlDB,
+			}), &gorm.Config{})
+			if err != nil {
+				return err
+			}
 		default:
 			// mysql connection
 			gormDB, err = gorm.Open(mysql.New(mysql.Config{
@@ -56,7 +60,7 @@ func (service *Service) openDBConn(ctx context.Context) error {
 			}
 		}
 
-		service.gormDBs[sqlDBInfo.Metadata().Name()] = gormDB
+		service.gormDBs[clientName] = gormDB
 
 		service.shutdowns = append(service.shutdowns, func() {
 			sqlDB.Close()
@@ -70,29 +74,42 @@ func (service *Service) openRedisConn(ctx context.Context) error {
 	var cfg = service.cfg
 
 	for _, redisOptions := range cfg.Databases() {
-		if redisOptions.Type != config.RedisDBType && !redisOptions.Required() {
+		if redisOptions.Type != config.RedisDBType || !redisOptions.Required() {
 			continue
 		}
 
-		service.redisClients[redisOptions.Metadata().Name()] = conn.NewRedisClient(&redis.Options{
-			Network:      "tcp",
-			Addr:         redisOptions.Address(),
-			Password:     redisOptions.Password(),
-			MaxRetries:   5,
-			ReadTimeout:  time.Minute,
-			WriteTimeout: time.Minute,
-			MinIdleConns: 10,
-			MaxConnAge:   time.Hour,
-		})
+		clientName := redisOptions.Metadata().Name()
 
-		if cfg.UseRediSearch() {
-			service.rediSearchClients[redisOptions.Metadata().Name()] = redisearch.NewClient(
+		opts, ok := service.redisOptions[clientName]
+		if !ok {
+			// Default options
+			opts = &redis.Options{
+				Network:      "tcp",
+				Addr:         redisOptions.Address(),
+				Username:     redisOptions.User(),
+				Password:     redisOptions.Password(),
+				MaxRetries:   5,
+				ReadTimeout:  time.Minute,
+				WriteTimeout: time.Minute,
+				MinIdleConns: 10,
+				MaxConnAge:   time.Hour,
+			}
+		}
+
+		opts.Addr = redisOptions.Address()
+		opts.Username = redisOptions.User()
+		opts.Password = redisOptions.Password()
+
+		service.redisClients[clientName] = conn.NewRedisClient(opts)
+
+		if redisOptions.Metadata().UseRediSearch {
+			service.rediSearchClients[clientName] = redisearch.NewClient(
 				redisOptions.Address(), cfg.ServiceName()+":index",
 			)
 		}
 
 		service.shutdowns = append(service.shutdowns, func() {
-			service.redisClients[redisOptions.Metadata().Name()].Close()
+			service.redisClients[clientName].Close()
 		})
 	}
 
@@ -113,13 +130,15 @@ func (service *Service) openExternalConn(ctx context.Context) error {
 			continue
 		}
 
-		externalServices[srv.Name()], err = service.DialExternalService(ctx, srv.Name())
+		name := strings.ToLower(srv.Name())
+
+		externalServices[name], err = service.DialExternalService(ctx, name)
 		if err != nil {
 			return err
 		}
 
 		service.shutdowns = append(service.shutdowns, func() {
-			externalServices[srv.Name()].Close()
+			externalServices[name].Close()
 		})
 	}
 
