@@ -36,6 +36,7 @@ require (
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/yaml.v2 v2.4.0
 	gorm.io/driver/mysql v1.0.3
+	gorm.io/driver/postgres v1.0.6
 	gorm.io/gorm v1.20.8
 	honnef.co/go/tools v0.0.1-2020.1.6 // indirect
 )
