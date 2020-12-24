@@ -32,6 +32,7 @@ type Service struct {
 	dbPoolOptions            map[string]*conn.DBConnPoolOptions
 	redisClients             map[string]*redis.Client
 	rediSearchClients        map[string]*redisearch.Client
+	redisOptions             map[string]*redis.Options
 	runtimeMuxEndpoint       string
 	httpMiddlewares          []http_middleware.Middleware
 	httpMux                  *http.ServeMux
@@ -80,6 +81,7 @@ func NewService(ctx context.Context, cfg *config.Config, grpcLogger grpclog.Logg
 		dbPoolOptions:            make(map[string]*conn.DBConnPoolOptions),
 		redisClients:             make(map[string]*redis.Client),
 		rediSearchClients:        make(map[string]*redisearch.Client),
+		redisOptions:             make(map[string]*redis.Options),
 		httpMiddlewares:          make([]http_middleware.Middleware, 0),
 		httpMux:                  http.NewServeMux(),
 		runtimeMux:               runtime.NewServeMux(),
@@ -319,10 +321,43 @@ func (service *Service) ExternalServiceConn(serviceName string) (*grpc.ClientCon
 	return cc, nil
 }
 
-// SetDBConnPool sets options for the connection pool
-func (service *Service) SetDBConnPool(opt *conn.DBConnPoolOptions, names ...string) {
-	for _, name := range names {
-		service.dbPoolOptions[name] = opt
+// SetDBConnPool sets connection pool options for sql database.
+// If no database name is provided, it will set for all sql databases
+func (service *Service) SetDBConnPool(opt *conn.DBConnPoolOptions, dbNames ...string) {
+	if service.dbPoolOptions == nil {
+		service.dbPoolOptions = make(map[string]*conn.DBConnPoolOptions)
+	}
+	if len(dbNames) > 0 {
+		for _, name := range dbNames {
+			service.dbPoolOptions[name] = opt
+		}
+		return
+	}
+	for _, dbOptions := range service.Config().Databases() {
+		if dbOptions.Type != config.SQLDBType && !dbOptions.Required() {
+			continue
+		}
+		service.dbPoolOptions[dbOptions.Metadata().Name()] = opt
+	}
+}
+
+// SetRedisOptions sets redis options when starting redis clients.
+// If no client name is provided, it will set for all clients
+func (service *Service) SetRedisOptions(opt *redis.Options, clientNames ...string) {
+	if service.redisOptions == nil {
+		service.redisOptions = make(map[string]*redis.Options)
+	}
+	if len(clientNames) > 0 {
+		for _, name := range clientNames {
+			service.redisOptions[name] = opt
+		}
+		return
+	}
+	for _, dbOptions := range service.Config().Databases() {
+		if dbOptions.Type != config.RedisDBType && !dbOptions.Required() {
+			continue
+		}
+		service.redisOptions[dbOptions.Metadata().Name()] = opt
 	}
 }
 
