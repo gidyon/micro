@@ -1,0 +1,46 @@
+serviceName: account
+serviceType: ClusterIp
+httpPort: 5600
+grpcPort: 5600
+logLevel: -1
+security:
+  tlsCert: /home/gideon/.secrets/keys/cert.pem
+  tlsKey: /home/gideon/.secrets/keys/key.pem
+  serverName: localhost
+  insecure: true
+databases:
+- required: true
+  type: sqlDatabase
+  address: mysql.default.cluster.svc.cluster.local
+  user: root
+  schema: accounts
+  password: hakty12
+  # userFile: /home/gideon/.secrets/mysql/user
+  # schemaFile: /home/gideon/.secrets/mysql/schema
+  # passwordFile: /home/gideon/.secrets/mysql/password
+  metadata:
+    name: mysql
+    dialect: mysql
+    orm: gorm
+- required: true
+  type: redisDatabase
+  address: redis.default.cluster.svc.cluster.local
+  user: redis
+  schema: db
+  password: hakty11
+  # userFile: /home/gideon/.secrets/redis/user
+  # passwordFile: /home/gideon/.secrets/redis/password
+  metadata:
+    name: redis
+    useRediSearch: true
+externalServices:
+- name: authentication
+  required: true
+  address: localhost:5600
+  tlsCert: /home/gideon/.secrets/keys/cert.pem
+  serverName: localhost
+- name: notification
+  required: true
+  address: localhost:5640
+  tlsCert: /home/gideon/.secrets/keys/cert.pem
+  serverName: localhost
