@@ -17,25 +17,18 @@ type AuthAPIMock interface {
 var AuthAPI = &mocks.AuthAPIMock{}
 
 func init() {
-	AuthAPI.On("AuthFunc", mock.Anything).
-		Return(context.Background(), nil)
-	AuthAPI.On("AuthenticateRequestV2", mock.Anything).
-		Return(&auth.Payload{Group: auth.DefaultAdminGroup()}, nil)
-	AuthAPI.On("AuthenticateRequest", mock.Anything).
-		Return(nil)
-	AuthAPI.On("AuthorizeActor", mock.Anything, mock.Anything).
-		Return(&auth.Payload{Group: auth.DefaultAdminGroup()}, nil)
-	AuthAPI.On("AuthorizeActors", mock.Anything, mock.Anything).
-		Return(&auth.Payload{Group: auth.DefaultAdminGroup()}, nil)
-	AuthAPI.On("AuthorizeGroups",
-		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-		Return(&auth.Payload{Group: auth.DefaultAdminGroup()}, nil)
-	AuthAPI.On("AuthorizeStrict",
-		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-		Return(&auth.Payload{Group: auth.DefaultAdminGroup()}, nil)
-	AuthAPI.On("AuthorizeActorOrGroups",
-		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-		Return(&auth.Payload{Group: auth.DefaultAdminGroup()}, nil)
-	AuthAPI.On("GenToken", mock.Anything, mock.Anything, mock.Anything).
-		Return("token", nil)
+	AuthAPI.On("AuthorizeFunc", mock.Anything).Return(context.Background(), nil)
+	AuthAPI.On("AuthenticateRequest", mock.Anything).Return(nil)
+	AuthAPI.On("AuthenticateRequestV2", mock.Anything).Return(&auth.Payload{Group: auth.DefaultAdminGroup()}, nil)
+	AuthAPI.On("AuthorizeGroup", mock.Anything, mock.Anything).Return(&auth.Payload{Group: auth.DefaultAdminGroup()}, nil)
+	AuthAPI.On("AuthorizeActor", mock.Anything, mock.Anything).Return(&auth.Payload{Group: auth.DefaultAdminGroup()}, nil)
+	AuthAPI.On("AuthorizeActors", mock.Anything, mock.Anything).Return(&auth.Payload{Group: auth.DefaultAdminGroup()}, nil)
+	AuthAPI.On("AuthorizeActorAndGroup", mock.Anything, mock.Anything, mock.Anything).Return(&auth.Payload{Group: auth.DefaultAdminGroup()}, nil)
+	AuthAPI.On("AuthorizeActorOrGroup", mock.Anything, mock.Anything, mock.Anything).Return(&auth.Payload{Group: auth.DefaultAdminGroup()}, nil)
+	AuthAPI.On("AuthorizeAdmin", mock.Anything).Return(&auth.Payload{Group: auth.DefaultAdminGroup()}, nil)
+	AuthAPI.On("AuthorizeAdminStrict", mock.Anything, mock.Anything).Return(&auth.Payload{Group: auth.DefaultAdminGroup()}, nil)
+	AuthAPI.On("AdminGroups").Return([]string{auth.DefaultAdminGroup(), auth.DefaultAdminGroup()})
+	AuthAPI.On("IsAdmin", mock.Anything).Return(true)
+	AuthAPI.On("GenToken", mock.Anything, mock.Anything, mock.Anything).Return("token", nil)
+	AuthAPI.On("GetJwtPayload", mock.Anything).Return(&auth.Payload{Group: auth.DefaultAdminGroup()}, nil)
 }
