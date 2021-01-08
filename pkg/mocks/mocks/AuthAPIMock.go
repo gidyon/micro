@@ -5,7 +5,7 @@ package mocks
 import (
 	context "context"
 
-	auth "github.com/gidyon/micro/v2/pkg/middleware/grpc/auth"
+	auth "github.com/gidyon/micro/pkg/grpc/auth"
 
 	mock "github.com/stretchr/testify/mock"
 
@@ -17,29 +17,36 @@ type AuthAPIMock struct {
 	mock.Mock
 }
 
-// AdminGroups provides a mock function with given fields:
-func (_m *AuthAPIMock) AdminGroups() []string {
-	ret := _m.Called()
+// AuthFunc provides a mock function with given fields: _a0
+func (_m *AuthAPIMock) AuthFunc(_a0 context.Context) (context.Context, error) {
+	ret := _m.Called(_a0)
 
-	var r0 []string
-	if rf, ok := ret.Get(0).(func() []string); ok {
-		r0 = rf()
+	var r0 context.Context
+	if rf, ok := ret.Get(0).(func(context.Context) context.Context); ok {
+		r0 = rf(_a0)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]string)
+			r0 = ret.Get(0).(context.Context)
 		}
 	}
 
-	return r0
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = rf(_a0)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
 }
 
-// AuthenticateRequest provides a mock function with given fields: ctx
-func (_m *AuthAPIMock) AuthenticateRequest(ctx context.Context) error {
-	ret := _m.Called(ctx)
+// AuthenticateRequest provides a mock function with given fields: _a0
+func (_m *AuthAPIMock) AuthenticateRequest(_a0 context.Context) error {
+	ret := _m.Called(_a0)
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(context.Context) error); ok {
-		r0 = rf(ctx)
+		r0 = rf(_a0)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -47,13 +54,13 @@ func (_m *AuthAPIMock) AuthenticateRequest(ctx context.Context) error {
 	return r0
 }
 
-// AuthenticateRequestV2 provides a mock function with given fields: ctx
-func (_m *AuthAPIMock) AuthenticateRequestV2(ctx context.Context) (*auth.Payload, error) {
-	ret := _m.Called(ctx)
+// AuthenticateRequestV2 provides a mock function with given fields: _a0
+func (_m *AuthAPIMock) AuthenticateRequestV2(_a0 context.Context) (*auth.Payload, error) {
+	ret := _m.Called(_a0)
 
 	var r0 *auth.Payload
 	if rf, ok := ret.Get(0).(func(context.Context) *auth.Payload); ok {
-		r0 = rf(ctx)
+		r0 = rf(_a0)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*auth.Payload)
@@ -62,7 +69,7 @@ func (_m *AuthAPIMock) AuthenticateRequestV2(ctx context.Context) (*auth.Payload
 
 	var r1 error
 	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
-		r1 = rf(ctx)
+		r1 = rf(_a0)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -93,38 +100,8 @@ func (_m *AuthAPIMock) AuthorizeActor(ctx context.Context, actorID string) (*aut
 	return r0, r1
 }
 
-// AuthorizeActorAndGroup provides a mock function with given fields: ctx, actorID, allowedGroups
-func (_m *AuthAPIMock) AuthorizeActorAndGroup(ctx context.Context, actorID string, allowedGroups ...string) (*auth.Payload, error) {
-	_va := make([]interface{}, len(allowedGroups))
-	for _i := range allowedGroups {
-		_va[_i] = allowedGroups[_i]
-	}
-	var _ca []interface{}
-	_ca = append(_ca, ctx, actorID)
-	_ca = append(_ca, _va...)
-	ret := _m.Called(_ca...)
-
-	var r0 *auth.Payload
-	if rf, ok := ret.Get(0).(func(context.Context, string, ...string) *auth.Payload); ok {
-		r0 = rf(ctx, actorID, allowedGroups...)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*auth.Payload)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, string, ...string) error); ok {
-		r1 = rf(ctx, actorID, allowedGroups...)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// AuthorizeActorOrGroup provides a mock function with given fields: ctx, actorID, allowedGroups
-func (_m *AuthAPIMock) AuthorizeActorOrGroup(ctx context.Context, actorID string, allowedGroups ...string) (*auth.Payload, error) {
+// AuthorizeActorOrGroups provides a mock function with given fields: ctx, actorID, allowedGroups
+func (_m *AuthAPIMock) AuthorizeActorOrGroups(ctx context.Context, actorID string, allowedGroups ...string) (*auth.Payload, error) {
 	_va := make([]interface{}, len(allowedGroups))
 	for _i := range allowedGroups {
 		_va[_i] = allowedGroups[_i]
@@ -183,77 +160,8 @@ func (_m *AuthAPIMock) AuthorizeActors(ctx context.Context, actorID ...string) (
 	return r0, r1
 }
 
-// AuthorizeAdmin provides a mock function with given fields: ctx
-func (_m *AuthAPIMock) AuthorizeAdmin(ctx context.Context) (*auth.Payload, error) {
-	ret := _m.Called(ctx)
-
-	var r0 *auth.Payload
-	if rf, ok := ret.Get(0).(func(context.Context) *auth.Payload); ok {
-		r0 = rf(ctx)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*auth.Payload)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
-		r1 = rf(ctx)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// AuthorizeAdminStrict provides a mock function with given fields: ctx, adminID
-func (_m *AuthAPIMock) AuthorizeAdminStrict(ctx context.Context, adminID string) (*auth.Payload, error) {
-	ret := _m.Called(ctx, adminID)
-
-	var r0 *auth.Payload
-	if rf, ok := ret.Get(0).(func(context.Context, string) *auth.Payload); ok {
-		r0 = rf(ctx, adminID)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*auth.Payload)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = rf(ctx, adminID)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// AuthorizeFunc provides a mock function with given fields: ctx
-func (_m *AuthAPIMock) AuthorizeFunc(ctx context.Context) (context.Context, error) {
-	ret := _m.Called(ctx)
-
-	var r0 context.Context
-	if rf, ok := ret.Get(0).(func(context.Context) context.Context); ok {
-		r0 = rf(ctx)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(context.Context)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
-		r1 = rf(ctx)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// AuthorizeGroup provides a mock function with given fields: ctx, allowedGroups
-func (_m *AuthAPIMock) AuthorizeGroup(ctx context.Context, allowedGroups ...string) (*auth.Payload, error) {
+// AuthorizeGroups provides a mock function with given fields: ctx, allowedGroups
+func (_m *AuthAPIMock) AuthorizeGroups(ctx context.Context, allowedGroups ...string) (*auth.Payload, error) {
 	_va := make([]interface{}, len(allowedGroups))
 	for _i := range allowedGroups {
 		_va[_i] = allowedGroups[_i]
@@ -282,20 +190,29 @@ func (_m *AuthAPIMock) AuthorizeGroup(ctx context.Context, allowedGroups ...stri
 	return r0, r1
 }
 
-// GenToken provides a mock function with given fields: ctx, payload, expires
-func (_m *AuthAPIMock) GenToken(ctx context.Context, payload *auth.Payload, expires time.Time) (string, error) {
-	ret := _m.Called(ctx, payload, expires)
+// AuthorizeStrict provides a mock function with given fields: ctx, actorID, allowedGroups
+func (_m *AuthAPIMock) AuthorizeStrict(ctx context.Context, actorID string, allowedGroups ...string) (*auth.Payload, error) {
+	_va := make([]interface{}, len(allowedGroups))
+	for _i := range allowedGroups {
+		_va[_i] = allowedGroups[_i]
+	}
+	var _ca []interface{}
+	_ca = append(_ca, ctx, actorID)
+	_ca = append(_ca, _va...)
+	ret := _m.Called(_ca...)
 
-	var r0 string
-	if rf, ok := ret.Get(0).(func(context.Context, *auth.Payload, time.Time) string); ok {
-		r0 = rf(ctx, payload, expires)
+	var r0 *auth.Payload
+	if rf, ok := ret.Get(0).(func(context.Context, string, ...string) *auth.Payload); ok {
+		r0 = rf(ctx, actorID, allowedGroups...)
 	} else {
-		r0 = ret.Get(0).(string)
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*auth.Payload)
+		}
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, *auth.Payload, time.Time) error); ok {
-		r1 = rf(ctx, payload, expires)
+	if rf, ok := ret.Get(1).(func(context.Context, string, ...string) error); ok {
+		r1 = rf(ctx, actorID, allowedGroups...)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -303,13 +220,34 @@ func (_m *AuthAPIMock) GenToken(ctx context.Context, payload *auth.Payload, expi
 	return r0, r1
 }
 
-// GetJwtPayload provides a mock function with given fields: ctx
-func (_m *AuthAPIMock) GetJwtPayload(ctx context.Context) (*auth.Payload, error) {
-	ret := _m.Called(ctx)
+// GenToken provides a mock function with given fields: _a0, _a1, _a2
+func (_m *AuthAPIMock) GenToken(_a0 context.Context, _a1 *auth.Payload, _a2 time.Time) (string, error) {
+	ret := _m.Called(_a0, _a1, _a2)
+
+	var r0 string
+	if rf, ok := ret.Get(0).(func(context.Context, *auth.Payload, time.Time) string); ok {
+		r0 = rf(_a0, _a1, _a2)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, *auth.Payload, time.Time) error); ok {
+		r1 = rf(_a0, _a1, _a2)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetJwtPayload provides a mock function with given fields: _a0
+func (_m *AuthAPIMock) GetJwtPayload(_a0 context.Context) (*auth.Payload, error) {
+	ret := _m.Called(_a0)
 
 	var r0 *auth.Payload
 	if rf, ok := ret.Get(0).(func(context.Context) *auth.Payload); ok {
-		r0 = rf(ctx)
+		r0 = rf(_a0)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*auth.Payload)
@@ -318,24 +256,10 @@ func (_m *AuthAPIMock) GetJwtPayload(ctx context.Context) (*auth.Payload, error)
 
 	var r1 error
 	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
-		r1 = rf(ctx)
+		r1 = rf(_a0)
 	} else {
 		r1 = ret.Error(1)
 	}
 
 	return r0, r1
-}
-
-// IsAdmin provides a mock function with given fields: group
-func (_m *AuthAPIMock) IsAdmin(group string) bool {
-	ret := _m.Called(group)
-
-	var r0 bool
-	if rf, ok := ret.Get(0).(func(string) bool); ok {
-		r0 = rf(group)
-	} else {
-		r0 = ret.Get(0).(bool)
-	}
-
-	return r0
 }
