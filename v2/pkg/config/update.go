@@ -16,7 +16,7 @@ func (cfg *config) updateConfigWith(newCfg *config) {
 	cfg.StartupSleepSeconds = setIntIfZero(cfg.StartupSleepSeconds, newCfg.StartupSleepSeconds)
 
 	// Service log
-	cfg.LogLevel = setIntIfZero(cfg.LogLevel, newCfg.LogLevel)
+	cfg.LogLevel = setLogLevl(cfg.LogLevel, newCfg.LogLevel)
 
 	// Service security
 	if newCfg.Security != nil {
@@ -166,6 +166,13 @@ func setSliceIfEmpty(val, def []*externalServiceOptions) []*externalServiceOptio
 
 func setIntIfZero(val, def int) int {
 	if val == 0 {
+		return def
+	}
+	return val
+}
+
+func setLogLevl(val, def int) int {
+	if val == unknownLevel {
 		return def
 	}
 	return val

@@ -65,6 +65,9 @@ func (cfg *Config) Security() {}
 
 // LogLevel returns log-level for logger
 func (cfg *Config) LogLevel() int {
+	if cfg.config.LogLevel == unknownLevel {
+		return 0
+	}
 	return cfg.config.LogLevel
 }
 

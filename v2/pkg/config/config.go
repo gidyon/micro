@@ -136,9 +136,11 @@ func New(from ...configFrom) (*Config, error) {
 	return &Config{*cfg}, nil
 }
 
+const unknownLevel = 1000
+
 func newConfig() *config {
 	return &config{
-		LogLevel: -1,
+		LogLevel: unknownLevel,
 		Security: new(securityOptions),
 		Database: &database{
 			SQLDatabase: &databaseOptions{
