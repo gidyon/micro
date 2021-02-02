@@ -33,6 +33,7 @@ func init() {
 	AuthAPI.On("IsAdmin", mock.Anything).Return(true)
 	AuthAPI.On("GenToken", anything()...).Return("token", nil)
 	AuthAPI.On("GetJwtPayload", anything()...).Return(mockPayload(), nil)
+	AuthAPI.On("GetPayloadFromJwt", anything()...).Return(mockPayload(), nil)
 }
 
 func anything() []interface{} {

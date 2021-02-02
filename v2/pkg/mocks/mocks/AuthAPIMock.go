@@ -326,6 +326,29 @@ func (_m *AuthAPIMock) GetJwtPayload(ctx context.Context) (*auth.Payload, error)
 	return r0, r1
 }
 
+// GetPayloadFromJwt provides a mock function with given fields: jwt
+func (_m *AuthAPIMock) GetPayloadFromJwt(jwt string) (*auth.Payload, error) {
+	ret := _m.Called(jwt)
+
+	var r0 *auth.Payload
+	if rf, ok := ret.Get(0).(func(string) *auth.Payload); ok {
+		r0 = rf(jwt)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*auth.Payload)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(jwt)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // IsAdmin provides a mock function with given fields: group
 func (_m *AuthAPIMock) IsAdmin(group string) bool {
 	ret := _m.Called(group)
