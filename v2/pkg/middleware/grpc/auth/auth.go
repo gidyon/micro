@@ -53,6 +53,7 @@ type API interface {
 	IsAdmin(group string) bool
 	GenToken(ctx context.Context, payload *Payload, expires time.Time) (string, error)
 	GetJwtPayload(ctx context.Context) (*Payload, error)
+	GetPayloadFromJwt(jwt string) (*Payload, error)
 	AuthorizeFunc(ctx context.Context) (context.Context, error)
 }
 
@@ -258,6 +259,15 @@ func (api *authAPI) GetJwtPayload(ctx context.Context) (*Payload, error) {
 	}
 
 	return tokenInfo.Payload, nil
+}
+
+func (api *authAPI) GetPayloadFromJwt(jwt string) (*Payload, error) {
+	claims, err := api.ParseToken(jwt)
+	if err != nil {
+		return nil, err
+	}
+
+	return claims.Payload, nil
 }
 
 func (api *authAPI) AuthorizeFunc(ctx context.Context) (context.Context, error) {
