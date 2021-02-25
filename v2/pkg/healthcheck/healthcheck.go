@@ -95,7 +95,9 @@ func RegisterProbe(opt *ProbeOptions) http.HandlerFunc {
 
 		// Check sql db connection
 		if len(service.SQLDBs()) > 0 {
-			for _, sqlDB := range service.SQLDBs() {
+			for name, sqlDB := range service.SQLDBs() {
+				name := name
+
 				wg.Add(1)
 
 				go func(sqlDB *sql.DB) {
@@ -103,7 +105,7 @@ func RegisterProbe(opt *ProbeOptions) http.HandlerFunc {
 
 					err = sqlDB.Ping()
 					if err != nil {
-						appendError(fmt.Sprintf("failed to ping sql database: %v", err))
+						appendError(fmt.Sprintf("[%s] failed to ping sql database: %v", name, err))
 						return
 					}
 				}(sqlDB)
@@ -112,7 +114,9 @@ func RegisterProbe(opt *ProbeOptions) http.HandlerFunc {
 
 		// Check gorm db connection
 		if len(service.GormDBs()) > 0 {
-			for _, gormDB := range service.GormDBs() {
+			for name, gormDB := range service.GormDBs() {
+				name := name
+
 				wg.Add(1)
 
 				go func(gormDB *gorm.DB) {
@@ -120,13 +124,13 @@ func RegisterProbe(opt *ProbeOptions) http.HandlerFunc {
 
 					sqlDB, err := gormDB.DB()
 					if err != nil {
-						appendError(fmt.Sprintf("failed to get sql database from gorm: %v", err))
+						appendError(fmt.Sprintf("[%s] failed to get sql database from gorm: %v", name, err))
 						return
 					}
 
 					err = sqlDB.Ping()
 					if err != nil {
-						appendError(fmt.Sprintf("failed to ping sql database: %v", err))
+						appendError(fmt.Sprintf("[%s] failed to ping sql database: %v", name, err))
 						return
 					}
 				}(gormDB)
@@ -135,7 +139,9 @@ func RegisterProbe(opt *ProbeOptions) http.HandlerFunc {
 
 		// Check redis db connection
 		if len(service.RedisClients()) > 0 {
-			for _, redisClient := range service.RedisClients() {
+			for name, redisClient := range service.RedisClients() {
+				name := name
+
 				wg.Add(1)
 
 				go func(redisClient *redis.Client) {
@@ -143,7 +149,7 @@ func RegisterProbe(opt *ProbeOptions) http.HandlerFunc {
 
 					statusCMD := redisClient.Ping(ctx)
 					if err := statusCMD.Err(); err != nil {
-						appendError(fmt.Sprintf("failed to ping redis: %v", err))
+						appendError(fmt.Sprintf("[%s] failed to ping redis: %v", name, err))
 						return
 					}
 				}(redisClient)
