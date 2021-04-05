@@ -158,7 +158,7 @@ func DialService(ctx context.Context, opt *GRPCDialOptions) (*grpc.ClientConn, e
 	var (
 		dopts = []grpc.DialOption{
 			// Load balancer scheme
-			grpc.WithBalancerName(roundrobin.Name),
+			grpc.WithDefaultServiceConfig(roundrobin.Name),
 			// Other interceptors
 			grpc.WithUnaryInterceptor(
 				grpc_middleware.ChainUnaryClient(
