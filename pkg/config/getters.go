@@ -68,6 +68,14 @@ func (cfg *Config) LogLevel() int {
 	return cfg.config.LogLevel
 }
 
+type HttpOptions struct {
+	opt *httpOptions
+}
+
+func (opt *HttpOptions) CorsEnabled() bool {
+	return opt.opt.EnableCORs
+}
+
 // Databases returns list of all databases options
 func (cfg *Config) Databases() []*DatabaseInfo {
 	dbs := make([]*DatabaseInfo, 0, len(cfg.config.Databases))
@@ -335,7 +343,7 @@ func (srv *ServiceInfo) Insecure() bool {
 // The name comparison is case-insentive.
 func (cfg *Config) ExternalServiceByName(serviceName string) (*ServiceInfo, error) {
 	for _, srv := range cfg.ExternalServices() {
-		if strings.ToLower(srv.Name()) == strings.ToLower(serviceName) {
+		if strings.EqualFold(strings.ToLower(srv.Name()), strings.ToLower(serviceName)) {
 			return srv, nil
 		}
 	}

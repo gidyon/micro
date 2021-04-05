@@ -48,12 +48,17 @@ type externalServiceOptions struct {
 	Insecure    bool   `yaml:"insecure"`
 }
 
+type httpOptions struct {
+	EnableCORs bool `yaml:"corsEnabled"`
+}
+
 // config contains configuration parameters, options and settings for a micro-service
 type config struct {
 	ServiceName         string                    `yaml:"serviceName"`
 	ServiceType         string                    `yaml:"serviceType"`
 	HTTPort             int                       `yaml:"httpPort"`
 	GRPCPort            int                       `yaml:"grpcPort"`
+	HttpOtions          *httpOptions              `yaml:"httpOptions"`
 	StartupSleepSeconds int                       `yaml:"startupSleepSeconds"`
 	LogLevel            int                       `yaml:"logLevel"`
 	Security            *securityOptions          `yaml:"security"`
@@ -106,17 +111,6 @@ const (
 	FromAll configFrom = 4
 )
 
-var allFroms = []configFrom{FromAll, FromFlag, FromEnv, FromFile}
-
-func allowedFrom(from configFrom) bool {
-	for _, v := range allFroms {
-		if from == v {
-			return true
-		}
-	}
-	return false
-}
-
 // New creates and parses a new config object
 func New(from ...configFrom) (*Config, error) {
 	cfg := newConfig()
@@ -138,7 +132,7 @@ func New(from ...configFrom) (*Config, error) {
 
 func newConfig() *config {
 	return &config{
-		LogLevel: -1,
+		LogLevel: 0,
 		Security: new(securityOptions),
 		Database: &database{
 			SQLDatabase: &databaseOptions{
