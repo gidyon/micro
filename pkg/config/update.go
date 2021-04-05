@@ -1,12 +1,5 @@
 package config
 
-import (
-	"bytes"
-	"io/ioutil"
-
-	"github.com/pkg/errors"
-)
-
 func (cfg *config) updateConfigWith(newCfg *config) {
 	// Set config only if zero value
 	cfg.ServiceName = setStringIfEmpty(cfg.ServiceName, newCfg.ServiceName)
@@ -120,25 +113,8 @@ func (cfg *config) updateConfigWith(newCfg *config) {
 	// External services
 	if len(newCfg.ExternalServices) != 0 {
 		// cfg.ExternalServices
-		for _, extSrv := range newCfg.ExternalServices {
-			cfg.ExternalServices = append(cfg.ExternalServices, extSrv)
-		}
+		cfg.ExternalServices = append(cfg.ExternalServices, newCfg.ExternalServices...)
 	}
-}
-
-func getFileContent(fileFile string) (string, error) {
-	bs, err := ioutil.ReadFile(fileFile)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to read from file")
-	}
-	return string(bytes.TrimSpace(bs)), nil
-}
-
-func setStringFromFileIfEmpty(val, def string) (string, error) {
-	if val == "" {
-		return getFileContent(def)
-	}
-	return val, nil
 }
 
 func setStringIfEmpty(val, def string) string {
@@ -153,15 +129,6 @@ func setBoolIfEmpty(val, def bool) bool {
 		return val
 	}
 	return def
-}
-
-func setSliceIfEmpty(val, def []*externalServiceOptions) []*externalServiceOptions {
-	if val == nil {
-		if def != nil {
-			return def
-		}
-	}
-	return val
 }
 
 func setIntIfZero(val, def int) int {
