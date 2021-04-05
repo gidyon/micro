@@ -58,6 +58,11 @@ func (service *Service) run(ctx context.Context) error {
 
 	service.httpMux.Handle(service.runtimeMuxEndpoint, service.runtimeMux)
 
+	// Apply optional middlewares
+	if service.cfg.HttpOptions().CorsEnabled() {
+		service.httpMiddlewares = append(service.httpMiddlewares, http_middleware.SupportCORS)
+	}
+
 	handler := http_middleware.Apply(service.Handler(), service.httpMiddlewares...)
 
 	var ghandler http.Handler
