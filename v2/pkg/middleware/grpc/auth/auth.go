@@ -234,18 +234,12 @@ func (api *authAPI) AuthorizeAdminStrict(ctx context.Context, adminID string) (*
 
 func (api *authAPI) AdminGroups() []string {
 	v := make([]string, 0, len(api.AdminsGroup))
-	for _, g := range api.AdminsGroup {
-		v = append(v, g)
-	}
+	v = append(v, api.AdminsGroup...)
 	return v
 }
 
 func (api *authAPI) IsAdmin(group string) bool {
-	err := matchGroup(group, api.AdminsGroup)
-	if err != nil {
-		return false
-	}
-	return true
+	return matchGroup(group, api.AdminsGroup) == nil
 }
 
 func (api *authAPI) GenToken(ctx context.Context, payload *Payload, expirationTime time.Time) (string, error) {
