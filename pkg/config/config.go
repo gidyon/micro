@@ -49,7 +49,7 @@ type externalServiceOptions struct {
 }
 
 type httpOptions struct {
-	EnableCORs bool `yaml:"corsEnabled"`
+	CorsEnabled bool `yaml:"corsEnabled"`
 }
 
 // config contains configuration parameters, options and settings for a micro-service
