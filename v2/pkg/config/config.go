@@ -48,12 +48,17 @@ type externalServiceOptions struct {
 	Insecure    bool   `yaml:"insecure"`
 }
 
+type httpOptions struct {
+	CorsEnabled bool `yaml:"corsEnabled"`
+}
+
 // config contains configuration parameters, options and settings for a micro-service
 type config struct {
 	ServiceName         string                    `yaml:"serviceName"`
 	ServiceType         string                    `yaml:"serviceType"`
 	HTTPort             int                       `yaml:"httpPort"`
 	GRPCPort            int                       `yaml:"grpcPort"`
+	HttpOtions          *httpOptions              `yaml:"httpOptions"`
 	StartupSleepSeconds int                       `yaml:"startupSleepSeconds"`
 	LogLevel            int                       `yaml:"logLevel"`
 	Security            *securityOptions          `yaml:"security"`

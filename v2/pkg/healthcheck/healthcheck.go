@@ -83,13 +83,19 @@ func RegisterProbe(opt *ProbeOptions) http.HandlerFunc {
 
 		if serviceNil {
 			w.WriteHeader(http.StatusExpectationFailed)
-			w.Write([]byte("service is uninitialized"))
+			_, err = w.Write([]byte("service is uninitialized"))
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+			}
 			return
 		}
 
 		if cfgNil {
 			w.WriteHeader(http.StatusExpectationFailed)
-			w.Write([]byte("service has no configuration options"))
+			_, err = w.Write([]byte("service has no configuration options"))
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+			}
 			return
 		}
 

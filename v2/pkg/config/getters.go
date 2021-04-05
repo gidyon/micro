@@ -71,6 +71,18 @@ func (cfg *Config) LogLevel() int {
 	return cfg.config.LogLevel
 }
 
+func (cfg *Config) HttpOptions() *HttpOptions {
+	return &HttpOptions{cfg.config.HttpOtions}
+}
+
+type HttpOptions struct {
+	*httpOptions
+}
+
+func (opt *HttpOptions) CorsEnabled() bool {
+	return opt.httpOptions.CorsEnabled
+}
+
 // Databases returns list of all databases options
 func (cfg *Config) Databases() []*DatabaseInfo {
 	dbs := make([]*DatabaseInfo, 0, len(cfg.config.Databases))
