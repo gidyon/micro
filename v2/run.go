@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"log"
 	"net"
 	"net/http"
 	"os"
@@ -51,12 +52,21 @@ func (service *Service) Start(ctx context.Context, initFn func() error) {
 
 func (service *Service) run(ctx context.Context) error {
 	defer func() {
+		var err error
 		for _, shutdown := range service.shutdowns {
-			shutdown()
+			err = shutdown()
+			if err != nil {
+				service.logger.Errorln(err)
+			}
 		}
 	}()
 
 	service.httpMux.Handle(service.runtimeMuxEndpoint, service.runtimeMux)
+
+	// Apply optional middlewares
+	if service.cfg.HttpOptions().CorsEnabled() {
+		service.httpMiddlewares = append(service.httpMiddlewares, http_middleware.SupportCORS)
+	}
 
 	handler := http_middleware.Apply(service.Handler(), service.httpMiddlewares...)
 
@@ -81,8 +91,8 @@ func (service *Service) run(ctx context.Context) error {
 	go func() {
 		for range c {
 			service.logger.Warning("shutting down service ...")
-			httpServer.Shutdown(ctx)
 			service.gRPCServer.Stop()
+			log.Fatalln(httpServer.Shutdown(ctx))
 
 			<-ctx.Done()
 		}
@@ -118,7 +128,7 @@ func (service *Service) run(ctx context.Context) error {
 		defer glis.Close()
 
 		// Serve grpc insecurely
-		go service.gRPCServer.Serve(glis)
+		go log.Fatalln(service.gRPCServer.Serve(glis))
 
 		// Serve http insecurely
 		return httpServer.Serve(lis)
@@ -198,15 +208,11 @@ func (service *Service) initGRPC(ctx context.Context) error {
 
 	// Add client unary interceptos
 	unaryClientInterceptors := []grpc.UnaryClientInterceptor{waitForReadyUnaryInterceptor}
-	for _, unaryInterceptor := range service.unaryClientInterceptors {
-		unaryClientInterceptors = append(unaryClientInterceptors, unaryInterceptor)
-	}
+	unaryClientInterceptors = append(unaryClientInterceptors, service.unaryClientInterceptors...)
 
 	// Add client streaming interceptos
 	streamClientInterceptors := make([]grpc.StreamClientInterceptor, 0)
-	for _, streamInterceptor := range service.streamClientInterceptors {
-		streamClientInterceptors = append(streamClientInterceptors, streamInterceptor)
-	}
+	streamClientInterceptors = append(streamClientInterceptors, service.streamClientInterceptors...)
 
 	// Add inteceptors as dial option
 	service.dialOptions = append(service.dialOptions, []grpc.DialOption{

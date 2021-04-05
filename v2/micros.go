@@ -15,7 +15,6 @@ import (
 	"github.com/rs/zerolog"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/grpclog"
-	"google.golang.org/protobuf/encoding/protojson"
 	"gorm.io/gorm"
 
 	"net/http"
@@ -38,8 +37,6 @@ type Service struct {
 	httpMiddlewares          []http_middleware.Middleware
 	httpMux                  *http.ServeMux
 	runtimeMux               *runtime.ServeMux
-	jsonMarshalOptions       protojson.MarshalOptions
-	jsonUnmarshalOptions     protojson.UnmarshalOptions
 	clientConn               *grpc.ClientConn
 	gRPCServer               *grpc.Server
 	externalServicesConn     map[string]*grpc.ClientConn
@@ -50,7 +47,7 @@ type Service struct {
 	dialOptions              []grpc.DialOption
 	unaryClientInterceptors  []grpc.UnaryClientInterceptor
 	streamClientInterceptors []grpc.StreamClientInterceptor
-	shutdowns                []func()
+	shutdowns                []func() error
 	// timeouts
 	httpServerReadTimeout  int
 	httpServerWriteTimeout int
@@ -93,7 +90,7 @@ func NewService(ctx context.Context, cfg *config.Config, grpcLogger grpclog.Logg
 		unaryClientInterceptors:  make([]grpc.UnaryClientInterceptor, 0),
 		streamClientInterceptors: make([]grpc.StreamClientInterceptor, 0),
 		dialOptions:              make([]grpc.DialOption, 0),
-		shutdowns:                make([]func(), 0),
+		shutdowns:                make([]func() error, 0),
 	}, nil
 }
 
@@ -135,60 +132,48 @@ func (service *Service) AddHTTPMiddlewares(middlewares ...http_middleware.Middle
 
 // AddGRPCDialOptions adds dial options to gRPC reverse proxy client
 func (service *Service) AddGRPCDialOptions(dialOptions ...grpc.DialOption) {
-	for _, dialOption := range dialOptions {
-		service.dialOptions = append(service.dialOptions, dialOption)
-	}
+	service.dialOptions = append(service.dialOptions, dialOptions...)
 }
 
 // AddGRPCServerOptions adds server options to gRPC server
 func (service *Service) AddGRPCServerOptions(serverOptions ...grpc.ServerOption) {
-	for _, serverOption := range serverOptions {
-		service.serverOptions = append(service.serverOptions, serverOption)
-	}
+	service.serverOptions = append(service.serverOptions, serverOptions...)
 }
 
 // AddGRPCStreamServerInterceptors adds stream interceptors to the gRPC server
 func (service *Service) AddGRPCStreamServerInterceptors(
 	streamInterceptors ...grpc.StreamServerInterceptor,
 ) {
-	for _, streamInterceptor := range streamInterceptors {
-		service.streamInterceptors = append(
-			service.streamInterceptors, streamInterceptor,
-		)
-	}
+	service.streamInterceptors = append(
+		service.streamInterceptors, streamInterceptors...,
+	)
 }
 
 // AddGRPCUnaryServerInterceptors adds unary interceptors to the gRPC server
 func (service *Service) AddGRPCUnaryServerInterceptors(
 	unaryInterceptors ...grpc.UnaryServerInterceptor,
 ) {
-	for _, unaryInterceptor := range unaryInterceptors {
-		service.unaryInterceptors = append(
-			service.unaryInterceptors, unaryInterceptor,
-		)
-	}
+	service.unaryInterceptors = append(
+		service.unaryInterceptors, unaryInterceptors...,
+	)
 }
 
 // AddGRPCStreamClientInterceptors adds stream interceptors to the gRPC reverse proxy client
 func (service *Service) AddGRPCStreamClientInterceptors(
 	streamInterceptors ...grpc.StreamClientInterceptor,
 ) {
-	for _, streamInterceptor := range streamInterceptors {
-		service.streamClientInterceptors = append(
-			service.streamClientInterceptors, streamInterceptor,
-		)
-	}
+	service.streamClientInterceptors = append(
+		service.streamClientInterceptors, streamInterceptors...,
+	)
 }
 
 // AddGRPCUnaryClientInterceptors adds unary interceptors to the gRPC reverse proxy client
 func (service *Service) AddGRPCUnaryClientInterceptors(
 	unaryInterceptors ...grpc.UnaryClientInterceptor,
 ) {
-	for _, unaryInterceptor := range unaryInterceptors {
-		service.unaryClientInterceptors = append(
-			service.unaryClientInterceptors, unaryInterceptor,
-		)
-	}
+	service.unaryClientInterceptors = append(
+		service.unaryClientInterceptors, unaryInterceptors...,
+	)
 }
 
 // AddServeMuxOptions adds servermux options to configure runtime mux

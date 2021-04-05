@@ -62,8 +62,8 @@ func (service *Service) openSQLDBConnections(ctx context.Context) error {
 
 		service.gormDBs[clientName] = gormDB
 
-		service.shutdowns = append(service.shutdowns, func() {
-			sqlDB.Close()
+		service.shutdowns = append(service.shutdowns, func() error {
+			return sqlDB.Close()
 		})
 	}
 
@@ -108,8 +108,8 @@ func (service *Service) openRedisConnections(ctx context.Context) error {
 			)
 		}
 
-		service.shutdowns = append(service.shutdowns, func() {
-			service.redisClients[clientName].Close()
+		service.shutdowns = append(service.shutdowns, func() error {
+			return service.redisClients[clientName].Close()
 		})
 	}
 
@@ -137,8 +137,8 @@ func (service *Service) openExternalConnections(ctx context.Context) error {
 			return err
 		}
 
-		service.shutdowns = append(service.shutdowns, func() {
-			externalServices[name].Close()
+		service.shutdowns = append(service.shutdowns, func() error {
+			return externalServices[name].Close()
 		})
 	}
 
