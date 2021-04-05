@@ -10,7 +10,6 @@ import (
 	"gorm.io/gorm/logger"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
-	"google.golang.org/grpc/balancer/roundrobin"
 
 	"strings"
 
@@ -157,8 +156,6 @@ type GRPCDialOptions struct {
 func DialService(ctx context.Context, opt *GRPCDialOptions) (*grpc.ClientConn, error) {
 	var (
 		dopts = []grpc.DialOption{
-			// Load balancer scheme
-			grpc.WithDefaultServiceConfig(roundrobin.Name),
 			// Other interceptors
 			grpc.WithUnaryInterceptor(
 				grpc_middleware.ChainUnaryClient(
