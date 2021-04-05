@@ -1,12 +1,5 @@
 package config
 
-import (
-	"bytes"
-	"io/ioutil"
-
-	"github.com/pkg/errors"
-)
-
 func (cfg *config) updateConfigWith(newCfg *config) {
 	// Set config only if zero value
 	cfg.ServiceName = setStringIfEmpty(cfg.ServiceName, newCfg.ServiceName)
@@ -23,7 +16,11 @@ func (cfg *config) updateConfigWith(newCfg *config) {
 		cfg.Security.TLSCertFile = setStringIfEmpty(cfg.Security.TLSCertFile, newCfg.Security.TLSCertFile)
 		cfg.Security.TLSKeyFile = setStringIfEmpty(cfg.Security.TLSKeyFile, newCfg.Security.TLSKeyFile)
 		cfg.Security.ServerName = setStringIfEmpty(cfg.Security.ServerName, newCfg.Security.ServerName)
-		cfg.Security.Insecure = setBoolIfEmpty(newCfg.Security.Insecure, newCfg.Security.Insecure)
+		cfg.Security.Insecure = setBoolIfEmpty(cfg.Security.Insecure, newCfg.Security.Insecure)
+	}
+
+	if newCfg.HttpOtions != nil {
+		cfg.HttpOtions.CorsEnabled = setBoolIfEmpty(cfg.HttpOtions.CorsEnabled, newCfg.HttpOtions.CorsEnabled)
 	}
 
 	isDBNonNil, isRedisNonNil := false, false
@@ -120,58 +117,32 @@ func (cfg *config) updateConfigWith(newCfg *config) {
 	// External services
 	if len(newCfg.ExternalServices) != 0 {
 		// cfg.ExternalServices
-		for _, extSrv := range newCfg.ExternalServices {
-			cfg.ExternalServices = append(cfg.ExternalServices, extSrv)
-		}
+		cfg.ExternalServices = append(cfg.ExternalServices, newCfg.ExternalServices...)
 	}
 }
 
-func getFileContent(fileFile string) (string, error) {
-	bs, err := ioutil.ReadFile(fileFile)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to read from file")
-	}
-	return string(bytes.TrimSpace(bs)), nil
-}
-
-func setStringFromFileIfEmpty(val, def string) (string, error) {
-	if val == "" {
-		return getFileContent(def)
-	}
-	return val, nil
-}
-
-func setStringIfEmpty(val, def string) string {
+func setStringIfEmpty(def, val string) string {
 	if val == "" {
 		return def
 	}
 	return val
 }
 
-func setBoolIfEmpty(val, def bool) bool {
+func setBoolIfEmpty(def, val bool) bool {
 	if val {
 		return val
 	}
 	return def
 }
 
-func setSliceIfEmpty(val, def []*externalServiceOptions) []*externalServiceOptions {
-	if val == nil {
-		if def != nil {
-			return def
-		}
-	}
-	return val
-}
-
-func setIntIfZero(val, def int) int {
+func setIntIfZero(def, val int) int {
 	if val == 0 {
 		return def
 	}
 	return val
 }
 
-func setLogLevl(val, def int) int {
+func setLogLevl(def, val int) int {
 	if val == unknownLevel {
 		return def
 	}

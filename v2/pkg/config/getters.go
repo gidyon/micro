@@ -350,7 +350,7 @@ func (srv *ServiceInfo) Insecure() bool {
 // The name comparison is case-insentive.
 func (cfg *Config) ExternalServiceByName(serviceName string) (*ServiceInfo, error) {
 	for _, srv := range cfg.ExternalServices() {
-		if strings.ToLower(srv.Name()) == strings.ToLower(serviceName) {
+		if strings.EqualFold(strings.ToLower(srv.Name()), strings.ToLower(serviceName)) {
 			return srv, nil
 		}
 	}

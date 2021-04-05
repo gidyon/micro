@@ -111,17 +111,6 @@ const (
 	FromAll configFrom = 4
 )
 
-var allFroms = []configFrom{FromAll, FromFlag, FromEnv, FromFile}
-
-func allowedFrom(from configFrom) bool {
-	for _, v := range allFroms {
-		if from == v {
-			return true
-		}
-	}
-	return false
-}
-
 // New creates and parses a new config object
 func New(from ...configFrom) (*Config, error) {
 	cfg := newConfig()
@@ -145,8 +134,9 @@ const unknownLevel = 1000
 
 func newConfig() *config {
 	return &config{
-		LogLevel: unknownLevel,
-		Security: new(securityOptions),
+		LogLevel:   unknownLevel,
+		Security:   new(securityOptions),
+		HttpOtions: new(httpOptions),
 		Database: &database{
 			SQLDatabase: &databaseOptions{
 				Type: SQLDBType,

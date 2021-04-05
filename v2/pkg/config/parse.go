@@ -29,7 +29,7 @@ func (cfg *config) parse(froms []configFrom) error {
 	}
 
 	// for removing duplicates
-	av := make(map[configFrom]struct{}, 0)
+	av := make(map[configFrom]struct{})
 
 loop:
 	for _, configFrom := range froms {
