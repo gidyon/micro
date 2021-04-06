@@ -158,7 +158,7 @@ func DialService(ctx context.Context, opt *GRPCDialOptions) (*grpc.ClientConn, e
 		dopts = []grpc.DialOption{
 			grpc.WithDefaultServiceConfig(`{"loadBalancingConfig": [ { "round_robin": {} } ] }`),
 			// Load balancer scheme
-			// grpc.WithDisableServiceConfig(),
+			grpc.WithDisableServiceConfig(),
 			// Other interceptors
 			grpc.WithUnaryInterceptor(
 				grpc_middleware.ChainUnaryClient(
@@ -174,6 +174,9 @@ func DialService(ctx context.Context, opt *GRPCDialOptions) (*grpc.ClientConn, e
 	if opt.K8Service {
 		opt.Address = strings.TrimSuffix(opt.Address, "dns:///")
 		opt.Address = "dns:///" + opt.Address
+	} else {
+		opt.Address = strings.TrimSuffix(opt.Address, "passthrough://")
+		opt.Address = "passthrough://" + opt.Address
 	}
 
 	return grpc.DialContext(ctx, opt.Address, dopts...)
