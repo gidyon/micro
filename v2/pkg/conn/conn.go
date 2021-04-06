@@ -16,7 +16,6 @@ import (
 	redis "github.com/go-redis/redis/v8"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/balancer/roundrobin"
 	"gorm.io/gorm"
 
 	// Imports mysql driver
@@ -157,8 +156,11 @@ type GRPCDialOptions struct {
 func DialService(ctx context.Context, opt *GRPCDialOptions) (*grpc.ClientConn, error) {
 	var (
 		dopts = []grpc.DialOption{
+			grpc.WithDefaultServiceConfig(`{
+				"loadBalancingConfig": [ { "round_robin": {} } ],
+			  }`),
 			// Load balancer scheme
-			grpc.WithBalancerName(roundrobin.Name),
+			grpc.WithDisableServiceConfig(),
 			// Other interceptors
 			grpc.WithUnaryInterceptor(
 				grpc_middleware.ChainUnaryClient(
