@@ -156,6 +156,7 @@ type GRPCDialOptions struct {
 func DialService(ctx context.Context, opt *GRPCDialOptions) (*grpc.ClientConn, error) {
 	var (
 		dopts = []grpc.DialOption{
+			grpc.WithDisableServiceConfig(),
 			// Other interceptors
 			grpc.WithUnaryInterceptor(
 				grpc_middleware.ChainUnaryClient(
