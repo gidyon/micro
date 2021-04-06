@@ -179,6 +179,8 @@ func DialService(ctx context.Context, opt *GRPCDialOptions) (*grpc.ClientConn, e
 		opt.Address = "passthrough:///" + opt.Address
 	}
 
+	fmt.Printf("DIALING ADDRESS: %s\n", opt.Address)
+
 	return grpc.DialContext(ctx, opt.Address, dopts...)
 }
 
