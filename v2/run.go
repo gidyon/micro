@@ -128,7 +128,12 @@ func (service *Service) run(ctx context.Context) error {
 		defer glis.Close()
 
 		// Serve grpc insecurely
-		go log.Fatalln(service.gRPCServer.Serve(glis))
+		go func() {
+			err := (service.gRPCServer.Serve(glis))
+			if err != nil {
+				service.logger.Errorln(err)
+			}
+		}()
 
 		// Serve http insecurely
 		return httpServer.Serve(lis)
