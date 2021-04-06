@@ -156,11 +156,9 @@ type GRPCDialOptions struct {
 func DialService(ctx context.Context, opt *GRPCDialOptions) (*grpc.ClientConn, error) {
 	var (
 		dopts = []grpc.DialOption{
-			grpc.WithDefaultServiceConfig(`{
-				"loadBalancingConfig": [ { "round_robin": {} } ],
-			  }`),
+			grpc.WithDefaultServiceConfig(`{"loadBalancingConfig": [ { "round_robin": {} } ] }`),
 			// Load balancer scheme
-			grpc.WithDisableServiceConfig(),
+			// grpc.WithDisableServiceConfig(),
 			// Other interceptors
 			grpc.WithUnaryInterceptor(
 				grpc_middleware.ChainUnaryClient(
