@@ -175,8 +175,8 @@ func DialService(ctx context.Context, opt *GRPCDialOptions) (*grpc.ClientConn, e
 		opt.Address = strings.TrimSuffix(opt.Address, "dns:///")
 		opt.Address = "dns:///" + opt.Address
 	} else {
-		opt.Address = strings.TrimSuffix(opt.Address, "passthrough://")
-		opt.Address = "passthrough://" + opt.Address
+		opt.Address = strings.TrimSuffix(opt.Address, "passthrough:///")
+		opt.Address = "passthrough:///" + opt.Address
 	}
 
 	return grpc.DialContext(ctx, opt.Address, dopts...)
