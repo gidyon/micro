@@ -127,9 +127,9 @@ func (service *Service) run(ctx context.Context) error {
 		}
 		defer glis.Close()
 
-		// Serve grpc insecurely
+		// Note: The call to serve grpc must be inside a goroutine; don't do [go service.gRPCServer.Serve(glis)]
 		go func() {
-			err := (service.gRPCServer.Serve(glis))
+			err := service.gRPCServer.Serve(glis)
 			if err != nil {
 				service.logger.Errorln(err)
 			}
