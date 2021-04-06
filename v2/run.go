@@ -121,7 +121,7 @@ func (service *Service) run(ctx context.Context) error {
 	logMsgFn()
 
 	if !service.cfg.ServiceTLSEnabled() {
-		glis, err := net.Listen("tcp", fmt.Sprintf(":%d", service.cfg.GRPCPort()))
+		glis, err := net.Listen("tcp", fmt.Sprintf("[::1]:%d", service.cfg.GRPCPort()))
 		if err != nil {
 			return errors.Wrap(err, "failed to create TCP listener for gRPC server")
 		}
