@@ -27,6 +27,7 @@ func (service *Service) openSQLDBConnections(ctx context.Context) error {
 
 		// open sql connection
 		sqlDB, err := conn.OpenSQLDBConn(&conn.DBOptions{
+			Name:     sqlDBInfo.Metadata().Name(),
 			Dialect:  sqlDBInfo.SQLDatabaseDialect(),
 			Address:  sqlDBInfo.Address(),
 			User:     sqlDBInfo.User(),
@@ -41,6 +42,7 @@ func (service *Service) openSQLDBConnections(ctx context.Context) error {
 		service.sqlDBs[clientName] = sqlDB
 
 		var gormDB *gorm.DB
+
 		// open gorm connection
 		switch strings.ToLower(sqlDBInfo.SQLDatabaseDialect()) {
 		case "postgres":
@@ -65,6 +67,8 @@ func (service *Service) openSQLDBConnections(ctx context.Context) error {
 		service.shutdowns = append(service.shutdowns, func() error {
 			return sqlDB.Close()
 		})
+
+		service.Logger().Infof("[CONNECTION TO SQL DATABASE MADE SUCCESSFULLY] [name: %s]", sqlDBInfo.Metadata().Name())
 	}
 
 	return nil
@@ -111,6 +115,8 @@ func (service *Service) openRedisConnections(ctx context.Context) error {
 		service.shutdowns = append(service.shutdowns, func() error {
 			return service.redisClients[clientName].Close()
 		})
+
+		service.Logger().Infof("[CONNECTION TO REDIS DATABASE MADE SUCCESSFULLY] [name: %s]", redisOptions.Metadata().Name())
 	}
 
 	return nil
@@ -140,6 +146,8 @@ func (service *Service) openExternalConnections(ctx context.Context) error {
 		service.shutdowns = append(service.shutdowns, func() error {
 			return externalServices[name].Close()
 		})
+
+		service.Logger().Infof("[CONNECTION TO SERVICE MADE SUCCESSFULLY] [name: %s]", srv.Name())
 	}
 
 	service.externalServicesConn = externalServices

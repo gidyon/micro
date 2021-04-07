@@ -31,6 +31,7 @@ type DBConnPoolOptions struct {
 
 // DBOptions contains parameters for connecting to a SQL database
 type DBOptions struct {
+	Name     string
 	Dialect  string
 	Address  string
 	User     string
@@ -71,7 +72,11 @@ func toSQLDBUsingORM(opt *DBOptions) (*gorm.DB, error) {
 		Logger: logger.Default.LogMode(logger.Silent),
 	})
 	if err != nil {
-		return nil, errors.Wrap(err, "(gorm) failed to open connection to mysql database")
+		return nil, errors.Wrap(err,
+			fmt.Sprintf(
+				"(GORM) failed to open connection to mysql database [name: %s] [address: %s]", opt.Name, opt.Address,
+			),
+		)
 	}
 
 	sqlDB, err := db.DB()
@@ -121,7 +126,12 @@ func toSQLDB(opt *DBOptions) (*sql.DB, error) {
 
 	sqlDB, err := sql.Open(dialect, dsn)
 	if err != nil {
-		return nil, errors.Wrap(err, "(sql) failed to open connection to database")
+
+		return nil, errors.Wrap(err,
+			fmt.Sprintf(
+				"(SQL) failed to open connection to mysql database [name: %s] [address: %s]", opt.Name, opt.Address,
+			),
+		)
 	}
 
 	if opt.ConnPool != nil {
@@ -178,8 +188,6 @@ func DialService(ctx context.Context, opt *GRPCDialOptions) (*grpc.ClientConn, e
 		opt.Address = strings.TrimSuffix(opt.Address, "passthrough:///")
 		opt.Address = "passthrough:///" + opt.Address
 	}
-
-	fmt.Printf("DIALING ADDRESS: %s\n", opt.Address)
 
 	return grpc.DialContext(ctx, opt.Address, dopts...)
 }
