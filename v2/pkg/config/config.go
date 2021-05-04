@@ -1,7 +1,11 @@
 // Package config contains options for bootstrapping a service dependencies
 package config
 
-import "github.com/pkg/errors"
+import (
+	"strings"
+
+	"github.com/pkg/errors"
+)
 
 type securityOptions struct {
 	TLSCertFile string `yaml:"tlsCert"`
@@ -88,7 +92,7 @@ func (from configFrom) String() string {
 }
 
 func fromString(from string) configFrom {
-	switch from {
+	switch strings.ToUpper(from) {
 	case FromFile.String():
 		return FromFile
 	case FromEnv.String():

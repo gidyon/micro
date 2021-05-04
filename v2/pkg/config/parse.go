@@ -11,12 +11,12 @@ func (cfg *config) parse(froms []configFrom) error {
 
 	from := flag.String(
 		"config-from", FromFile.String(),
-		`Where to parse config parameters. Options are 'all', 'flags', 'environment' or 'file'`,
+		`Where to read config parameters. Options are 'all', 'flags', 'environment' or 'file'`,
 	)
 
 	configFile := flag.String(
 		"config-file", "configs/config.yml",
-		`File to read service config`,
+		`File location to read config parameter`,
 	)
 
 	flagCfg := newConfig()
@@ -24,14 +24,13 @@ func (cfg *config) parse(froms []configFrom) error {
 	// calls flag.Parse()
 	flagCfg.setConfigFromFlag()
 
-	if len(froms) == 0 {
+	if *from != "" {
 		froms = []configFrom{fromString(*from)}
 	}
 
 	// for removing duplicates
 	av := make(map[configFrom]struct{})
 
-loop:
 	for _, configFrom := range froms {
 		_, ok := av[configFrom]
 		if ok {
@@ -52,23 +51,6 @@ loop:
 			if err != nil {
 				return err
 			}
-		default:
-			// from flag
-			*cfg = *flagCfg
-
-			// from environement
-			err = cfg.setConfigFromEnv()
-			if err != nil {
-				return fmt.Errorf("failed to set config from flag variables: %w", err)
-			}
-
-			// from file
-			err = cfg.setConfigFromFile(*configFile)
-			if err != nil {
-				return fmt.Errorf("failed to set config from file: %w", err)
-			}
-
-			break loop
 		}
 	}
 
