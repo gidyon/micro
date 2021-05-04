@@ -126,7 +126,6 @@ func toSQLDB(opt *DBOptions) (*sql.DB, error) {
 
 	sqlDB, err := sql.Open(dialect, dsn)
 	if err != nil {
-
 		return nil, errors.Wrap(err,
 			fmt.Sprintf(
 				"(SQL) failed to open connection to mysql database [name: %s] [address: %s]", opt.Name, opt.Address,
