@@ -35,13 +35,13 @@ database:
       name: redis
       useRediSearch: true
 externalServices:
-- name: authentication
-  required: true
-  address: localhost:5600
-  tlsCert: /home/gideon/.secrets/keys/cert.pem
-  serverName: localhost
-- name: notification
-  required: true
-  address: localhost:5640
-  tlsCert: /home/gideon/.secrets/keys/cert.pem
-  serverName: localhost
+  - name: authentication
+    required: true
+    address: localhost:5600
+    tlsCert: /home/gideon/.secrets/keys/cert.pem
+    serverName: localhost
+  - name: notification
+    required: true
+    address: localhost:5640
+    tlsCert: /home/gideon/.secrets/keys/cert.pem
+    serverName: localhost
