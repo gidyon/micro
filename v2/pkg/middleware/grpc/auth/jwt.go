@@ -12,6 +12,7 @@ type Payload struct {
 	PhoneNumber  string
 	EmailAddress string
 	Group        string
+	Roles        []string
 }
 
 // Claims contains JWT claims information
