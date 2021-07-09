@@ -122,7 +122,10 @@ func (api *authAPI) AuthorizeGroup(ctx context.Context, allowedGroups ...string)
 
 	err := matchGroup(claims.Payload.Group, allowedGroups)
 	if err != nil {
-		return nil, err
+		err = matchGroups(claims.Roles, allowedGroups)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return claims.Payload, nil
@@ -164,7 +167,10 @@ func (api *authAPI) AuthorizeActorAndGroup(ctx context.Context, actorID string, 
 
 	err := matchGroup(claims.Payload.Group, allowedGroups)
 	if err != nil {
-		return nil, err
+		err = matchGroups(claims.Roles, allowedGroups)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if claims.ID != actorID {
@@ -185,19 +191,26 @@ func (api *authAPI) AuthorizeActorOrGroup(ctx context.Context, actorID string, a
 		err = status.Errorf(codes.PermissionDenied, "permission denied for actor with id %s", claims.ID)
 	}
 
-	err2 := matchGroup(claims.Payload.Group, allowedGroups)
+	err1 := matchGroup(claims.Payload.Group, allowedGroups)
+	err2 := matchGroups(claims.Roles, allowedGroups)
 
-	switch {
-	case err2 == nil && err == nil:
-	case err2 != nil && err == nil:
-	case err2 == nil && err != nil:
-	case err != nil:
+	err = hasNil(err, err1, err2)
+	if err != nil {
 		return nil, err
-	default:
-		return nil, err2
 	}
 
 	return claims.Payload, nil
+}
+
+func hasNil(errs ...error) error {
+	var err error
+	for _, v := range errs {
+		err = v
+		if err == nil {
+			return err
+		}
+	}
+	return err
 }
 
 func (api *authAPI) AuthorizeAdmin(ctx context.Context) (*Payload, error) {
@@ -382,4 +395,15 @@ func matchGroup(claimGroup string, allowedGroups []string) error {
 		}
 	}
 	return status.Errorf(codes.PermissionDenied, "permission denied for group %s", claimGroup)
+}
+
+func matchGroups(claimGroups []string, allowedGroups []string) error {
+	for _, group := range allowedGroups {
+		for _, claimGroup := range claimGroups {
+			if claimGroup == group {
+				return nil
+			}
+		}
+	}
+	return status.Errorf(codes.PermissionDenied, "permission denied for groups %s", strings.Join(claimGroups, ","))
 }
