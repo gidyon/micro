@@ -145,10 +145,13 @@ func (service *Service) run(ctx context.Context) error {
 	}
 
 	tlsConfig := &tls.Config{
-		ClientAuth:   tls.VerifyClientCertIfGiven,
-		ClientCAs:    certPool,
-		Certificates: []tls.Certificate{*cert},
-		NextProtos:   []string{"h2"},
+		NextProtos:         []string{"h2", "http/1.1", "http/1.2"},
+		MinVersion:         tls.VersionTLS10,
+		MaxVersion:         tls.VersionTLS13,
+		ClientAuth:         tls.VerifyClientCertIfGiven,
+		ClientCAs:          certPool,
+		Certificates:       []tls.Certificate{*cert},
+		InsecureSkipVerify: true,
 	}
 
 	// Serve tls
