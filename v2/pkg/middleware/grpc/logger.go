@@ -22,12 +22,6 @@ func AddLogging(
 	// Shared options for the logger, with a custom gRPC code to log level function.
 	o := []grpc_zap.Option{
 		grpc_zap.WithLevels(codeToLevel),
-		grpc_zap.WithDecider(func(fullMethodName string, err error) bool {
-			if err == nil && fullMethodName == "" {
-				return false
-			}
-			return true
-		}),
 	}
 
 	// Make sure that log statements internal to gRPC library are logged using the zapLogger as well.
