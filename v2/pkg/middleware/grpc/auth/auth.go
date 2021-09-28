@@ -63,11 +63,12 @@ type authAPI struct {
 
 // Options contains parameters for instantiating new API
 type Options struct {
-	SigningMethod jwt.SigningMethod
-	SigningKey    []byte
-	Issuer        string
-	Audience      string
-	AdminsGroup   []string
+	SigningMethod    jwt.SigningMethod
+	SigningKey       []byte
+	OtherSigningKeys [][]byte
+	Issuer           string
+	Audience         string
+	AdminsGroup      []string
 }
 
 // NewAPI creates a jwt authentication and authorization API using HS256 algorithm
@@ -378,6 +379,8 @@ func (api *authAPI) genToken(ctx context.Context, payload *Payload, expires int6
 			Audience:  api.Audience,
 		},
 	})
+
+	token.Header["kid"] = payload.ProjectID
 
 	return token.SignedString(api.SigningKey)
 }

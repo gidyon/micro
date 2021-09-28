@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
+	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -12,10 +12,6 @@ import (
 // codeToLevel redirects OK to DEBUG level logging instead of INFO
 // This is example how you can log several gRPC code results
 func codeToLevel(code codes.Code) zapcore.Level {
-	if code == codes.OK {
-		// It is DEBUG
-		return zap.DebugLevel
-	}
 	return grpc_zap.DefaultCodeToLevel(code)
 }
 
@@ -26,9 +22,16 @@ func AddLogging(
 	// Shared options for the logger, with a custom gRPC code to log level function.
 	o := []grpc_zap.Option{
 		grpc_zap.WithLevels(codeToLevel),
+		grpc_zap.WithDecider(func(fullMethodName string, err error) bool {
+			if err == nil && fullMethodName == "" {
+				return false
+			}
+			return true
+		}),
 	}
+
 	// Make sure that log statements internal to gRPC library are logged using the zapLogger as well.
-	grpc_zap.ReplaceGrpcLogger(logger)
+	grpc_zap.ReplaceGrpcLoggerV2(logger)
 
 	// Add unary interceptors
 	unaryInterceptors := []grpc.UnaryServerInterceptor{
