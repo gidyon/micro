@@ -315,8 +315,6 @@ func (api *authAPI) ParseToken(tokenString string) (claims *Claims, err error) {
 		}
 	}()
 
-	fmt.Println("TOKEN: ", tokenString)
-
 	token, err := jwt.ParseWithClaims(
 		tokenString,
 		&Claims{},
