@@ -32,21 +32,24 @@ func handleErr(err error) {
 }
 
 // Initialize initializes service without starting it.
-func (service *Service) Initialize(ctx context.Context) error {
-	handleErr(service.openSQLDBConnections(ctx))
-	handleErr(service.openRedisConnections(ctx))
-	handleErr(service.openExternalConnections(ctx))
-	handleErr(service.initGRPC(ctx))
+func (service *Service) init(ctx context.Context) error {
+	service.onceFn.Do(func() {
+		handleErr(service.openSQLDBConnections(ctx))
+		handleErr(service.openRedisConnections(ctx))
+		handleErr(service.openExternalConnections(ctx))
+		handleErr(service.initGRPC(ctx))
+	})
 	return nil
+}
+
+// Initialize initializes service without starting it.
+func (service *Service) Initialize(ctx context.Context) error {
+	return service.init(ctx)
 }
 
 // Start opens connection to databases and external services, afterwards starting grpc and http server to serve requests.
 func (service *Service) Start(ctx context.Context, initFn func() error) {
-	handleErr(service.openSQLDBConnections(ctx))
-	handleErr(service.openRedisConnections(ctx))
-	handleErr(service.openExternalConnections(ctx))
-	handleErr(service.initGRPC(ctx))
-	handleErr(initFn())
+	handleErr(service.init(ctx))
 	handleErr(service.run(ctx))
 }
 

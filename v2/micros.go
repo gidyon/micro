@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/RediSearch/redisearch-go/redisearch"
@@ -51,6 +52,7 @@ type Service struct {
 	// timeouts
 	httpServerReadTimeout  int
 	httpServerWriteTimeout int
+	onceFn                 *sync.Once
 }
 
 // NewService create a micro-service utility store by parsing data from config. Pass nil logger to use default logger
@@ -91,6 +93,7 @@ func NewService(ctx context.Context, cfg *config.Config, grpcLogger grpclog.Logg
 		streamClientInterceptors: make([]grpc.StreamClientInterceptor, 0),
 		dialOptions:              make([]grpc.DialOption, 0),
 		shutdowns:                make([]func() error, 0),
+		onceFn:                   &sync.Once{},
 	}, nil
 }
 
