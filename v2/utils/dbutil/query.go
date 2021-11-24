@@ -19,7 +19,7 @@ func ParseQuery(query string, stopWords ...string) string {
 
 func containStopWord(token string, stopWords []string) bool {
 	for _, stopWord := range stopWords {
-		if strings.ToLower(stopWord) == strings.ToLower(token) {
+		if strings.EqualFold(stopWord, token) {
 			return true
 		}
 	}
