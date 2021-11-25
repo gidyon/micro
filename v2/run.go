@@ -50,6 +50,7 @@ func (service *Service) Initialize(ctx context.Context) error {
 // Start opens connection to databases and external services, afterwards starting grpc and http server to serve requests.
 func (service *Service) Start(ctx context.Context, initFn func() error) {
 	handleErr(service.init(ctx))
+	handleErr(initFn())
 	handleErr(service.run(ctx))
 }
 
