@@ -50,6 +50,7 @@ type API interface {
 	AuthorizeAdmin(ctx context.Context) (*Payload, error)
 	AuthorizeAdminStrict(ctx context.Context, adminID string) (*Payload, error)
 	AdminGroups() []string
+	AddAdminGroups(groups ...string)
 	IsAdmin(group string) bool
 	GenToken(ctx context.Context, payload *Payload, expires time.Time) (string, error)
 	GetJwtPayload(ctx context.Context) (*Payload, error)
@@ -254,6 +255,10 @@ func (api *authAPI) AdminGroups() []string {
 
 func (api *authAPI) IsAdmin(group string) bool {
 	return matchGroup(group, api.AdminsGroup) == nil
+}
+
+func (api *authAPI) AddAdminGroups(groups ...string) {
+	api.AdminsGroup = append(api.AdminsGroup, groups...)
 }
 
 func (api *authAPI) GenToken(ctx context.Context, payload *Payload, expirationTime time.Time) (string, error) {
