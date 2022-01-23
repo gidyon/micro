@@ -9,7 +9,7 @@ import (
 	"github.com/Pallinder/go-randomdata"
 	"github.com/gidyon/micro/v2/utils/errs"
 
-	"github.com/dgrijalva/jwt-go"
+	"github.com/golang-jwt/jwt"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
@@ -367,27 +367,6 @@ func (api *authAPI) AddMD(ctx context.Context, actorID, group string) context.Co
 // AddTokenMD adds token as authorization metadata to context and returns the updated context object
 func AddTokenMD(ctx context.Context, token string) context.Context {
 	return addTokenMD(ctx, token)
-}
-
-func (api *authAPI) genToken(ctx context.Context, payload *Payload, expires int64) (tokenStr string, err error) {
-	defer func() {
-		if err2 := recover(); err2 != nil {
-			err = fmt.Errorf("%v", err2)
-		}
-	}()
-
-	token := jwt.NewWithClaims(api.SigningMethod, Claims{
-		Payload: payload,
-		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: expires,
-			Issuer:    api.Issuer,
-			Audience:  api.Audience,
-		},
-	})
-
-	token.Header["kid"] = payload.ProjectID
-
-	return token.SignedString(api.SigningKey)
 }
 
 func addTokenMD(ctx context.Context, token string) context.Context {
