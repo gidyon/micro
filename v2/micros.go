@@ -73,7 +73,7 @@ func NewService(ctx context.Context, cfg *config.Config, grpcLogger grpclog.Logg
 		logger = NewLogger(cfg.ServiceName(), zerolog.TraceLevel)
 	}
 
-	return &Service{
+	svc := &Service{
 		cfg:                      cfg,
 		logger:                   logger,
 		gormDBs:                  make(map[string]*gorm.DB),
@@ -85,16 +85,19 @@ func NewService(ctx context.Context, cfg *config.Config, grpcLogger grpclog.Logg
 		httpMiddlewares:          make([]http_middleware.Middleware, 0),
 		httpMux:                  http.NewServeMux(),
 		runtimeMux:               runtime.NewServeMux(),
+		externalServicesConn:     map[string]*grpc.ClientConn{},
 		serveMuxOptions:          make([]runtime.ServeMuxOption, 0),
 		serverOptions:            make([]grpc.ServerOption, 0),
 		unaryInterceptors:        make([]grpc.UnaryServerInterceptor, 0),
 		streamInterceptors:       make([]grpc.StreamServerInterceptor, 0),
+		dialOptions:              make([]grpc.DialOption, 0),
 		unaryClientInterceptors:  make([]grpc.UnaryClientInterceptor, 0),
 		streamClientInterceptors: make([]grpc.StreamClientInterceptor, 0),
-		dialOptions:              make([]grpc.DialOption, 0),
 		shutdowns:                make([]func() error, 0),
 		onceFn:                   &sync.Once{},
-	}, nil
+	}
+
+	return svc, nil
 }
 
 // Handler returns the http handler for the service
@@ -311,7 +314,7 @@ func (service *Service) ExternalServiceConn(serviceName string) (*grpc.ClientCon
 }
 
 // SetDBConnPool sets connection pool options for sql database.
-// If no database name is provided, it will set for all sql databases
+// If no database name is provided, the option will be applied to all sql databases
 func (service *Service) SetDBConnPool(opt *conn.DBConnPoolOptions, dbNames ...string) {
 	if service.dbPoolOptions == nil {
 		service.dbPoolOptions = make(map[string]*conn.DBConnPoolOptions)
@@ -323,27 +326,27 @@ func (service *Service) SetDBConnPool(opt *conn.DBConnPoolOptions, dbNames ...st
 		return
 	}
 	for _, dbOptions := range service.Config().Databases() {
-		if dbOptions.Type != config.SQLDBType && !dbOptions.Required() {
+		if dbOptions.Type != config.SQLDBType {
 			continue
 		}
 		service.dbPoolOptions[dbOptions.Metadata().Name()] = opt
 	}
 }
 
-// SetRedisOptions sets redis options when starting redis clients.
-// If no client name is provided, it will set for all clients
-func (service *Service) SetRedisOptions(opt *redis.Options, clientNames ...string) {
+// SetRedisOptions sets redis options when starting redis client(s).
+// If no client name is provided, the option will be applied to all redis client dbs
+func (service *Service) SetRedisOptions(opt *redis.Options, dbNames ...string) {
 	if service.redisOptions == nil {
 		service.redisOptions = make(map[string]*redis.Options)
 	}
-	if len(clientNames) > 0 {
-		for _, name := range clientNames {
+	if len(dbNames) > 0 {
+		for _, name := range dbNames {
 			service.redisOptions[name] = opt
 		}
 		return
 	}
 	for _, dbOptions := range service.Config().Databases() {
-		if dbOptions.Type != config.RedisDBType && !dbOptions.Required() {
+		if dbOptions.Type != config.RedisDBType {
 			continue
 		}
 		service.redisOptions[dbOptions.Metadata().Name()] = opt
