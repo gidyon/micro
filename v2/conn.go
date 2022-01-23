@@ -25,6 +25,28 @@ func (service *Service) openSQLDBConnections(ctx context.Context) error {
 
 		clientName := sqlDBInfo.Metadata().Name()
 
+		// Service pool options
+		poolOptions, ok := service.dbPoolOptions[clientName]
+		if !ok {
+			poolOptions = &conn.DBConnPoolOptions{}
+		}
+
+		// Config pool options
+		poolSettings := sqlDBInfo.PoolSettings()
+
+		if poolOptions.MaxOpenConns == 0 {
+			// Update pool option with one in config
+			poolOptions.MaxOpenConns = poolSettings.MaxOpenConns()
+		}
+		if poolOptions.MaxIdleConns == 0 {
+			// Update pool option with one in config
+			poolOptions.MaxIdleConns = poolSettings.MaxIdleConns()
+		}
+		if poolOptions.MaxLifetime == 0 {
+			// Update pool option with one in config
+			poolOptions.MaxLifetime = time.Duration(time.Second * time.Duration(poolSettings.MaxConnLifetimeSeconds()))
+		}
+
 		// open sql connection
 		sqlDB, err := conn.OpenSQLDBConn(&conn.DBOptions{
 			Name:     sqlDBInfo.Metadata().Name(),
@@ -33,7 +55,7 @@ func (service *Service) openSQLDBConnections(ctx context.Context) error {
 			User:     sqlDBInfo.User(),
 			Password: sqlDBInfo.Password(),
 			Schema:   sqlDBInfo.Schema(),
-			ConnPool: service.dbPoolOptions[clientName],
+			ConnPool: poolOptions,
 		})
 		if err != nil {
 			return err
