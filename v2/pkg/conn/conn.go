@@ -24,8 +24,8 @@ import (
 
 // DBConnPoolOptions contains options for customizing the connection pool
 type DBConnPoolOptions struct {
-	MaxIdleConns int
-	MaxOpenConns int
+	MaxIdleConns uint
+	MaxOpenConns uint
 	MaxLifetime  time.Duration
 }
 
@@ -86,10 +86,10 @@ func toSQLDBUsingORM(opt *DBOptions) (*gorm.DB, error) {
 
 	if opt.ConnPool != nil {
 		if opt.ConnPool.MaxIdleConns != 0 {
-			sqlDB.SetMaxIdleConns(opt.ConnPool.MaxIdleConns)
+			sqlDB.SetMaxIdleConns(int(opt.ConnPool.MaxIdleConns))
 		}
 		if opt.ConnPool.MaxOpenConns != 0 {
-			sqlDB.SetMaxOpenConns(opt.ConnPool.MaxOpenConns)
+			sqlDB.SetMaxOpenConns(int(opt.ConnPool.MaxOpenConns))
 		}
 		if opt.ConnPool.MaxLifetime != 0 {
 			sqlDB.SetConnMaxLifetime(opt.ConnPool.MaxLifetime)
@@ -135,10 +135,10 @@ func toSQLDB(opt *DBOptions) (*sql.DB, error) {
 
 	if opt.ConnPool != nil {
 		if opt.ConnPool.MaxIdleConns != 0 {
-			sqlDB.SetMaxIdleConns(opt.ConnPool.MaxIdleConns)
+			sqlDB.SetMaxIdleConns(int(opt.ConnPool.MaxIdleConns))
 		}
 		if opt.ConnPool.MaxOpenConns != 0 {
-			sqlDB.SetMaxOpenConns(opt.ConnPool.MaxOpenConns)
+			sqlDB.SetMaxOpenConns(int(opt.ConnPool.MaxOpenConns))
 		}
 		if opt.ConnPool.MaxLifetime != 0 {
 			sqlDB.SetConnMaxLifetime(opt.ConnPool.MaxLifetime)
