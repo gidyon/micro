@@ -1,9 +1,8 @@
 package config
 
 import (
+	"fmt"
 	"strings"
-
-	"github.com/pkg/errors"
 )
 
 // ServiceName returns the service name
@@ -83,6 +82,9 @@ func (opt *HttpOptions) CorsEnabled() bool {
 	return opt.httpOptions.CorsEnabled
 }
 
+// Database prevents this field from being accidentally overriden
+func (cfg *Config) Database() {}
+
 // Databases returns list of all databases options
 func (cfg *Config) Databases() []*DatabaseInfo {
 	dbs := make([]*DatabaseInfo, 0, len(cfg.config.Databases))
@@ -92,11 +94,6 @@ func (cfg *Config) Databases() []*DatabaseInfo {
 	}
 
 	return dbs
-}
-
-// DatabaseInfo contains parameters for connecting to a database
-type DatabaseInfo struct {
-	*databaseOptions
 }
 
 // DatabaseMetadata contains database metadata options
@@ -126,6 +123,30 @@ func (md *DatabaseMetadata) ORM() string {
 		return md.dbMetadata.Orm
 	}
 	return ""
+}
+
+type PoolSettings struct {
+	*poolSettings
+}
+
+// MaxOpenConns returns max number of open connection
+func (ps *PoolSettings) MaxOpenConns() uint {
+	return ps.poolSettings.MaxOpenConns
+}
+
+// MaxIdleConns returns max number of idle connections
+func (ps *PoolSettings) MaxIdleConns() uint {
+	return ps.poolSettings.MaxIdleConns
+}
+
+// MaxConnLifetimeSeconds returns lifetime of a connection in seconds
+func (ps *PoolSettings) MaxConnLifetimeSeconds() uint {
+	return ps.poolSettings.MaxConnLifetimeSeconds
+}
+
+// DatabaseInfo contains parameters for connecting to a database
+type DatabaseInfo struct {
+	*databaseOptions
 }
 
 // Required is whether the database is required by the service
@@ -195,6 +216,11 @@ func (db *DatabaseInfo) PasswordFile() string {
 // Metadata is contains metadata information for the database
 func (db *DatabaseInfo) Metadata() *DatabaseMetadata {
 	return &DatabaseMetadata{db.databaseOptions.Metadata}
+}
+
+// Metadata is contains metadata information for the database
+func (db *DatabaseInfo) PoolSettings() *PoolSettings {
+	return &PoolSettings{db.databaseOptions.PoolSettings}
 }
 
 // UseGorm indicates whether the service will use Object Relational Mapper for database operations
@@ -354,5 +380,5 @@ func (cfg *Config) ExternalServiceByName(serviceName string) (*ServiceInfo, erro
 			return srv, nil
 		}
 	}
-	return nil, errors.Errorf("no service found with name: %s", serviceName)
+	return nil, fmt.Errorf("no service found with name: %s", serviceName)
 }

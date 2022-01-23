@@ -1,17 +1,16 @@
-serviceVersion: v1/beta
 serviceName: account
-servicePort: 5600
-logging:
-  level: -1
-  timeFormat: 2006-01-02T15:04:05Z07:00
+serviceType: ClusterIp
+httpPort: 5600
+grpcPort: 5600
+logLevel: -1
 security:
   tlsCert: /home/gideon/.secrets/keys/cert.pem
   tlsKey: /home/gideon/.secrets/keys/key.pem
   serverName: localhost
   insecure: true
-database:
-  sqlDatabase:
-    required: true
+databases:
+  - required: true
+    type: sqlDatabase
     address: mysql.default.cluster.svc.cluster.local
     user: root
     schema: accounts
@@ -19,12 +18,16 @@ database:
     # userFile: /home/gideon/.secrets/mysql/user
     # schemaFile: /home/gideon/.secrets/mysql/schema
     # passwordFile: /home/gideon/.secrets/mysql/password
+    poolSettings:
+      maxOpenConns: 10
+      maxIdleConns: 10
+      maxConnLifetimeSeconds: 10
     metadata:
       name: mysql
       dialect: mysql
       orm: gorm
-  redisDatabase:
-    required: true
+  - required: true
+    type: redisDatabase
     address: redis.default.cluster.svc.cluster.local
     user: redis
     schema: db

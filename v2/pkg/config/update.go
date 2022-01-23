@@ -23,92 +23,6 @@ func (cfg *config) updateConfigWith(newCfg *config) {
 		cfg.HttpOtions.CorsEnabled = setBoolIfEmpty(cfg.HttpOtions.CorsEnabled, newCfg.HttpOtions.CorsEnabled)
 	}
 
-	isDBNonNil, isRedisNonNil := false, false
-	if newCfg.Databases != nil {
-		if newCfg.Database.SQLDatabase != nil {
-			isDBNonNil = true
-		}
-		if newCfg.Database.RedisDatabase != nil {
-			isRedisNonNil = true
-		}
-	}
-
-	// SQL Database
-	if isDBNonNil {
-		cfg.Database.SQLDatabase.Required = setBoolIfEmpty(
-			cfg.Database.SQLDatabase.Required, newCfg.Database.SQLDatabase.Required,
-		)
-		cfg.Database.SQLDatabase.Address = setStringIfEmpty(
-			cfg.Database.SQLDatabase.Address, newCfg.Database.SQLDatabase.Address,
-		)
-		cfg.Database.SQLDatabase.User = setStringIfEmpty(
-			cfg.Database.SQLDatabase.User, newCfg.Database.SQLDatabase.User,
-		)
-		cfg.Database.SQLDatabase.Password = setStringIfEmpty(
-			cfg.Database.SQLDatabase.Password, newCfg.Database.SQLDatabase.Password,
-		)
-		cfg.Database.SQLDatabase.Schema = setStringIfEmpty(
-			cfg.Database.SQLDatabase.Schema, newCfg.Database.SQLDatabase.Schema,
-		)
-		cfg.Database.SQLDatabase.UserFile = setStringIfEmpty(
-			cfg.Database.SQLDatabase.UserFile, newCfg.Database.SQLDatabase.UserFile,
-		)
-		cfg.Database.SQLDatabase.PasswordFile = setStringIfEmpty(
-			cfg.Database.SQLDatabase.PasswordFile, newCfg.Database.SQLDatabase.PasswordFile,
-		)
-		cfg.Database.SQLDatabase.SchemaFile = setStringIfEmpty(
-			cfg.Database.SQLDatabase.SchemaFile, newCfg.Database.SQLDatabase.SchemaFile,
-		)
-		cfg.Database.SQLDatabase.Metadata.Dialect = setStringIfEmpty(
-			cfg.Database.SQLDatabase.Metadata.Dialect,
-			newCfg.Database.SQLDatabase.Metadata.Dialect,
-		)
-		cfg.Database.SQLDatabase.Metadata.Name = setStringIfEmpty(
-			cfg.Database.SQLDatabase.Metadata.Name,
-			newCfg.Database.SQLDatabase.Metadata.Name,
-		)
-		cfg.Database.SQLDatabase.Metadata.Orm = setStringIfEmpty(
-			cfg.Database.SQLDatabase.Metadata.Orm,
-			newCfg.Database.SQLDatabase.Metadata.Orm,
-		)
-	}
-
-	// Redis Database
-	if isRedisNonNil {
-		cfg.Database.RedisDatabase.Required = setBoolIfEmpty(
-			cfg.Database.RedisDatabase.Required, newCfg.Database.RedisDatabase.Required,
-		)
-		cfg.Database.RedisDatabase.Address = setStringIfEmpty(
-			cfg.Database.RedisDatabase.Address, newCfg.Database.RedisDatabase.Address,
-		)
-		cfg.Database.RedisDatabase.User = setStringIfEmpty(
-			cfg.Database.RedisDatabase.User, newCfg.Database.RedisDatabase.User,
-		)
-		cfg.Database.RedisDatabase.Password = setStringIfEmpty(
-			cfg.Database.RedisDatabase.Password, newCfg.Database.RedisDatabase.Password,
-		)
-		cfg.Database.RedisDatabase.Schema = setStringIfEmpty(
-			cfg.Database.RedisDatabase.Schema, newCfg.Database.RedisDatabase.Schema,
-		)
-		cfg.Database.RedisDatabase.UserFile = setStringIfEmpty(
-			cfg.Database.RedisDatabase.UserFile, newCfg.Database.RedisDatabase.UserFile,
-		)
-		cfg.Database.RedisDatabase.PasswordFile = setStringIfEmpty(
-			cfg.Database.RedisDatabase.PasswordFile, newCfg.Database.RedisDatabase.PasswordFile,
-		)
-		cfg.Database.RedisDatabase.SchemaFile = setStringIfEmpty(
-			cfg.Database.RedisDatabase.SchemaFile, newCfg.Database.RedisDatabase.SchemaFile,
-		)
-		cfg.Database.RedisDatabase.Metadata.Name = setStringIfEmpty(
-			cfg.Database.RedisDatabase.Metadata.Name,
-			newCfg.Database.RedisDatabase.Metadata.Name,
-		)
-		cfg.Database.RedisDatabase.Metadata.UseRediSearch = setBoolIfEmpty(
-			cfg.Database.RedisDatabase.Metadata.UseRediSearch,
-			newCfg.Database.RedisDatabase.Metadata.UseRediSearch,
-		)
-	}
-
 	// Update databases options
 	if len(newCfg.Databases) > 0 {
 		cfg.Databases = newCfg.Databases
@@ -117,7 +31,7 @@ func (cfg *config) updateConfigWith(newCfg *config) {
 	// External services
 	if len(newCfg.ExternalServices) != 0 {
 		// cfg.ExternalServices
-		cfg.ExternalServices = append(cfg.ExternalServices, newCfg.ExternalServices...)
+		cfg.ExternalServices = newCfg.ExternalServices
 	}
 }
 

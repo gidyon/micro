@@ -2,8 +2,6 @@
 package config
 
 import (
-	"strings"
-
 	"github.com/pkg/errors"
 )
 
@@ -12,6 +10,12 @@ type securityOptions struct {
 	TLSKeyFile  string `yaml:"tlsKey"`
 	ServerName  string `yaml:"serverName"`
 	Insecure    bool   `yaml:"insecure"`
+}
+
+type poolSettings struct {
+	MaxOpenConns           uint `yaml:"maxOpenConns"`
+	MaxIdleConns           uint `yaml:"maxIdleConns"`
+	MaxConnLifetimeSeconds uint `yaml:"maxConnLifetimeSeconds"`
 }
 
 type dbMetadata struct {
@@ -23,22 +27,17 @@ type dbMetadata struct {
 
 // databaseOptions contains parameters that open connection to a database
 type databaseOptions struct {
-	Required     bool        `yaml:"required"`
-	Type         string      `yaml:"type"`
-	Address      string      `yaml:"address"`
-	User         string      `yaml:"user"`
-	Schema       string      `yaml:"schema"`
-	Password     string      `yaml:"password"`
-	UserFile     string      `yaml:"userFile"`
-	SchemaFile   string      `yaml:"schemaFile"`
-	PasswordFile string      `yaml:"passwordFile"`
-	Metadata     *dbMetadata `yaml:"metadata"`
-}
-
-// databases contains information about databases used by service
-type database struct {
-	SQLDatabase   *databaseOptions `yaml:"sqlDatabase"`
-	RedisDatabase *databaseOptions `yaml:"redisDatabase"`
+	Required     bool          `yaml:"required"`
+	Type         string        `yaml:"type"`
+	Address      string        `yaml:"address"`
+	User         string        `yaml:"user"`
+	Schema       string        `yaml:"schema"`
+	Password     string        `yaml:"password"`
+	UserFile     string        `yaml:"userFile"`
+	SchemaFile   string        `yaml:"schemaFile"`
+	PasswordFile string        `yaml:"passwordFile"`
+	PoolSettings *poolSettings `yaml:"poolSettings"`
+	Metadata     *dbMetadata   `yaml:"metadata"`
 }
 
 // externalServiceOptions contains information to connect to a remote service
@@ -66,7 +65,6 @@ type config struct {
 	StartupSleepSeconds int                       `yaml:"startupSleepSeconds"`
 	LogLevel            int                       `yaml:"logLevel"`
 	Security            *securityOptions          `yaml:"security"`
-	Database            *database                 `yaml:"database"`
 	Databases           []*databaseOptions        `yaml:"databases"`
 	ExternalServices    []*externalServiceOptions `yaml:"externalServices"`
 }
@@ -76,51 +74,12 @@ type Config struct {
 	config
 }
 
-type configFrom int
-
-func (from configFrom) String() string {
-	switch from {
-	case FromFile:
-		return "FILE"
-	case FromEnv:
-		return "ENV"
-	case FromFlag:
-		return "FLAG"
-	default:
-		return "ALL"
-	}
-}
-
-func fromString(from string) configFrom {
-	switch strings.ToUpper(from) {
-	case FromFile.String():
-		return FromFile
-	case FromEnv.String():
-		return FromEnv
-	case FromFlag.String():
-		return FromFlag
-	default:
-		return FromAll
-	}
-}
-
-const (
-	// FromFile is option to read config from yaml file
-	FromFile configFrom = 1
-	// FromEnv is option to read config from environment variables
-	FromEnv configFrom = 2
-	// FromFlag is option to read config from flags
-	FromFlag configFrom = 3
-	// FromAll is option to read config from flags, environment and file
-	FromAll configFrom = 4
-)
-
-// New creates and parses a new config object
-func New(from ...configFrom) (*Config, error) {
+// New creates config by reading from first non-empty file specified in configFile argument or with --config-file flag
+func New(configFile ...string) (*Config, error) {
 	cfg := newConfig()
 
-	// Parse the config
-	err := cfg.parse(from)
+	// Parse the config file
+	err := cfg.parse(configFile...)
 	if err != nil {
 		return nil, err
 	}
@@ -138,23 +97,9 @@ const unknownLevel = 1000
 
 func newConfig() *config {
 	return &config{
-		LogLevel:   unknownLevel,
-		Security:   new(securityOptions),
-		HttpOtions: new(httpOptions),
-		Database: &database{
-			SQLDatabase: &databaseOptions{
-				Type: SQLDBType,
-				Metadata: &dbMetadata{
-					Name: "mysql",
-				},
-			},
-			RedisDatabase: &databaseOptions{
-				Type: RedisDBType,
-				Metadata: &dbMetadata{
-					Name: "redis",
-				},
-			},
-		},
+		LogLevel:         unknownLevel,
+		Security:         new(securityOptions),
+		HttpOtions:       new(httpOptions),
 		Databases:        make([]*databaseOptions, 0),
 		ExternalServices: make([]*externalServiceOptions, 0),
 	}
