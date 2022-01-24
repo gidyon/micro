@@ -131,17 +131,26 @@ type PoolSettings struct {
 
 // MaxOpenConns returns max number of open connection
 func (ps *PoolSettings) MaxOpenConns() uint {
-	return ps.poolSettings.MaxOpenConns
+	if ps.poolSettings != nil {
+		return ps.poolSettings.MaxOpenConns
+	}
+	return 0
 }
 
 // MaxIdleConns returns max number of idle connections
 func (ps *PoolSettings) MaxIdleConns() uint {
-	return ps.poolSettings.MaxIdleConns
+	if ps.poolSettings != nil {
+		return ps.poolSettings.MaxIdleConns
+	}
+	return 0
 }
 
 // MaxConnLifetimeSeconds returns lifetime of a connection in seconds
 func (ps *PoolSettings) MaxConnLifetimeSeconds() uint {
-	return ps.poolSettings.MaxConnLifetimeSeconds
+	if ps.poolSettings != nil {
+		return ps.poolSettings.MaxConnLifetimeSeconds
+	}
+	return 0
 }
 
 // DatabaseInfo contains parameters for connecting to a database
