@@ -17,6 +17,17 @@ type AuthAPIMock struct {
 	mock.Mock
 }
 
+// AddAdminGroups provides a mock function with given fields: groups
+func (_m *AuthAPIMock) AddAdminGroups(groups ...string) {
+	_va := make([]interface{}, len(groups))
+	for _i := range groups {
+		_va[_i] = groups[_i]
+	}
+	var _ca []interface{}
+	_ca = append(_ca, _va...)
+	_m.Called(_ca...)
+}
+
 // AdminGroups provides a mock function with given fields:
 func (_m *AuthAPIMock) AdminGroups() []string {
 	ret := _m.Called()
