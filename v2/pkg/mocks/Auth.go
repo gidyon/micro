@@ -30,6 +30,7 @@ func init() {
 	AuthAPI.On("AuthorizeAdmin", anything()...).Return(mockPayload(), nil)
 	AuthAPI.On("AuthorizeAdminStrict", anything()...).Return(mockPayload(), nil)
 	AuthAPI.On("AdminGroups").Return([]string{auth.DefaultAdminGroup(), auth.DefaultAdminGroup()})
+	AuthAPI.On("AddAdminGroups").Return()
 	AuthAPI.On("IsAdmin", mock.Anything).Return(true)
 	AuthAPI.On("GenToken", anything()...).Return("token", nil)
 	AuthAPI.On("GetJwtPayload", anything()...).Return(mockPayload(), nil)
