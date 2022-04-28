@@ -52,7 +52,8 @@ type Service struct {
 	// timeouts
 	httpServerReadTimeout  int
 	httpServerWriteTimeout int
-	onceFn                 *sync.Once
+	initOnceFn             *sync.Once
+	runOnceFn              *sync.Once
 }
 
 // NewService create a micro-service utility store by parsing data from config. Pass nil logger to use default logger
@@ -94,7 +95,8 @@ func NewService(ctx context.Context, cfg *config.Config, grpcLogger grpclog.Logg
 		unaryClientInterceptors:  make([]grpc.UnaryClientInterceptor, 0),
 		streamClientInterceptors: make([]grpc.StreamClientInterceptor, 0),
 		shutdowns:                make([]func() error, 0),
-		onceFn:                   &sync.Once{},
+		initOnceFn:               &sync.Once{},
+		runOnceFn:                &sync.Once{},
 	}
 
 	return svc, nil
@@ -105,30 +107,31 @@ func (service *Service) Handler() http.Handler {
 	return service.httpMux
 }
 
-// ServeMux returns the internal ServeMux of the service
+// ServeMux returns the HTTP request multiplexer for the service
 func (service *Service) ServeMux() *http.ServeMux {
 	return service.httpMux
 }
 
-// SetServeMuxEndpoint sets the base path for servemux handler
-func (service *Service) SetServeMuxEndpoint(path string) {
-	service.runtimeMuxEndpoint = path
+// SetServeMuxEndpoint sets the base pattern for the Http to gRPC handler
+func (service *Service) SetServeMuxEndpoint(pattern string) {
+	service.runtimeMuxEndpoint = pattern
 }
 
-// AddEndpoint binds a handler to the service at provided path
-func (service *Service) AddEndpoint(path string, handler http.Handler) {
+// AddEndpoint registers the handler for the given pattern.
+// If a handler already exists for pattern, Handle panics.
+func (service *Service) AddEndpoint(pattern string, handler http.Handler) {
 	if service.httpMux == nil {
 		service.httpMux = http.NewServeMux()
 	}
-	service.httpMux.Handle(path, handler)
+	service.httpMux.Handle(pattern, handler)
 }
 
-// AddEndpointFunc works like http.HandleFunc
-func (service *Service) AddEndpointFunc(path string, handleFunc http.HandlerFunc) {
+// AddEndpointFunc registers the handler function for the given pattern.
+func (service *Service) AddEndpointFunc(pattern string, handleFunc http.HandlerFunc) {
 	if service.httpMux == nil {
 		service.httpMux = http.NewServeMux()
 	}
-	service.httpMux.HandleFunc(path, handleFunc)
+	service.httpMux.HandleFunc(pattern, handleFunc)
 }
 
 // AddHTTPMiddlewares adds http middlewares to the service
@@ -136,17 +139,17 @@ func (service *Service) AddHTTPMiddlewares(middlewares ...http_middleware.Middle
 	service.httpMiddlewares = append(service.httpMiddlewares, middlewares...)
 }
 
-// AddGRPCDialOptions adds dial options to gRPC reverse proxy client
+// AddGRPCDialOptions adds dial options to the service gRPC reverse proxy client
 func (service *Service) AddGRPCDialOptions(dialOptions ...grpc.DialOption) {
 	service.dialOptions = append(service.dialOptions, dialOptions...)
 }
 
-// AddGRPCServerOptions adds server options to gRPC server
+// AddGRPCServerOptions adds server options to the service gRPC server
 func (service *Service) AddGRPCServerOptions(serverOptions ...grpc.ServerOption) {
 	service.serverOptions = append(service.serverOptions, serverOptions...)
 }
 
-// AddGRPCStreamServerInterceptors adds stream interceptors to the gRPC server
+// AddGRPCStreamServerInterceptors adds stream interceptors to the service gRPC server
 func (service *Service) AddGRPCStreamServerInterceptors(
 	streamInterceptors ...grpc.StreamServerInterceptor,
 ) {
@@ -155,7 +158,7 @@ func (service *Service) AddGRPCStreamServerInterceptors(
 	)
 }
 
-// AddGRPCUnaryServerInterceptors adds unary interceptors to the gRPC server
+// AddGRPCUnaryServerInterceptors adds unary interceptors to the service gRPC server
 func (service *Service) AddGRPCUnaryServerInterceptors(
 	unaryInterceptors ...grpc.UnaryServerInterceptor,
 ) {
@@ -164,7 +167,7 @@ func (service *Service) AddGRPCUnaryServerInterceptors(
 	)
 }
 
-// AddGRPCStreamClientInterceptors adds stream interceptors to the gRPC reverse proxy client
+// AddGRPCStreamClientInterceptors adds stream interceptors to the service gRPC reverse proxy client
 func (service *Service) AddGRPCStreamClientInterceptors(
 	streamInterceptors ...grpc.StreamClientInterceptor,
 ) {
@@ -173,7 +176,7 @@ func (service *Service) AddGRPCStreamClientInterceptors(
 	)
 }
 
-// AddGRPCUnaryClientInterceptors adds unary interceptors to the gRPC reverse proxy client
+// AddGRPCUnaryClientInterceptors adds unary interceptors to the service gRPC reverse proxy client
 func (service *Service) AddGRPCUnaryClientInterceptors(
 	unaryInterceptors ...grpc.UnaryClientInterceptor,
 ) {
@@ -182,40 +185,44 @@ func (service *Service) AddGRPCUnaryClientInterceptors(
 	)
 }
 
-// AddServeMuxOptions adds servermux options to configure runtime mux
-func (service *Service) AddServeMuxOptions(serveMuxOptions ...runtime.ServeMuxOption) {
+// AddRuntimeMuxOptions adds ServeMuxOption options to service gRPC reverse proxy client
+// The options will be applied to the service runtime mux at startup
+func (service *Service) AddRuntimeMuxOptions(serveMuxOptions ...runtime.ServeMuxOption) {
 	if service.serveMuxOptions == nil {
 		service.serveMuxOptions = make([]runtime.ServeMuxOption, 0)
 	}
 	service.serveMuxOptions = append(service.serveMuxOptions, serveMuxOptions...)
 }
 
-// GRPCDialOptions returns the service grpc dial options
+// GRPCDialOptions returns the service gRPC dial options
 func (service *Service) GRPCDialOptions() []grpc.DialOption {
 	return service.dialOptions
 }
 
-// Config returns the config for the service
+// Config returns the config used by the service
 func (service *Service) Config() *config.Config {
 	return service.cfg
 }
 
-// Logger returns grpc logger for the service
+// Logger returns grpc logger by the service
 func (service *Service) Logger() grpclog.LoggerV2 {
 	return service.logger
 }
 
-// RuntimeMux returns the runtime muxer for the service
+// RuntimeMux returns the HTTP request multiplexer for the service reverse proxy server
+// gRPC services and methods are registered on this multiplxer.
+// DO NOT register your anything on the returned muxer
+// Use AddRuntimeMuxOptions method to register custom options
 func (service *Service) RuntimeMux() *runtime.ServeMux {
 	return service.runtimeMux
 }
 
-// ClientConn returns the underlying client connection to grpc server used by reverse proxy
+// ClientConn returns the underlying client connection to gRPC server used by reverse proxy
 func (service *Service) ClientConn() *grpc.ClientConn {
 	return service.clientConn
 }
 
-// GRPCServer returns the grpc server
+// GRPCServer returns the grpc server for the service
 func (service *Service) GRPCServer() *grpc.Server {
 	return service.gRPCServer
 }
@@ -275,7 +282,7 @@ func (service *Service) RedisClients() map[string]*redis.Client {
 	return service.redisClients
 }
 
-// DialExternalService grpc dials to an external service
+// DialExternalService dials to an external service registered in config "externalServices" section using gRPC protocol
 func (service *Service) DialExternalService(
 	ctx context.Context, serviceName string, dialOptions ...grpc.DialOption,
 ) (*grpc.ClientConn, error) {
@@ -304,7 +311,8 @@ func (service *Service) DialExternalService(
 	})
 }
 
-// ExternalServiceConn returns the underlying grpc connection to the external service
+// ExternalServiceConn returns the underlying rRPC connection to the external service found in config "externalServices"
+// This method is prefered over DialExternalService at service startup
 func (service *Service) ExternalServiceConn(serviceName string) (*grpc.ClientConn, error) {
 	cc, ok := service.externalServicesConn[strings.ToLower(serviceName)]
 	if !ok {
@@ -353,12 +361,12 @@ func (service *Service) SetRedisOptions(opt *redis.Options, dbNames ...string) {
 	}
 }
 
-// SetHTTPServerReadTimout sets the read timeout for the http server
+// SetHTTPServerReadTimout sets the read timeout to the service HTTP server
 func (service *Service) SetHTTPServerReadTimout(sec int) {
 	service.httpServerReadTimeout = sec
 }
 
-// SetHTTPServerWriteTimout sets the write timeout for the http server
+// SetHTTPServerWriteTimout sets the write timeout ftoor the service HTTP server
 func (service *Service) SetHTTPServerWriteTimout(sec int) {
 	service.httpServerWriteTimeout = sec
 }
