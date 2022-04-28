@@ -25,141 +25,157 @@ import (
 	"google.golang.org/grpc"
 )
 
-func handleErr(err error) {
-	if err != nil {
-		panic(err)
+// panic after encountering first non nil error
+func handleErrs(errs ...error) {
+	for _, err := range errs {
+		if err != nil {
+			panic(err)
+		}
 	}
 }
 
-// Initialize initializes service without starting it.
-func (service *Service) init(ctx context.Context) error {
-	service.onceFn.Do(func() {
-		handleErr(service.openSQLDBConnections(ctx))
-		handleErr(service.openRedisConnections(ctx))
-		handleErr(service.openExternalConnections(ctx))
-		handleErr(service.initGRPC(ctx))
+// initializes service without starting it.
+func (service *Service) init(ctx context.Context) {
+	service.initOnceFn.Do(func() {
+		handleErrs(
+			service.openSQLDBConnections(ctx),
+			service.openRedisConnections(ctx),
+			service.openExternalConnections(ctx),
+			service.initGRPC(ctx),
+		)
 	})
-	return nil
 }
 
 // Initialize initializes service without starting it.
-func (service *Service) Initialize(ctx context.Context) error {
-	return service.init(ctx)
+func (service *Service) Initialize(ctx context.Context) {
+	service.init(ctx)
 }
 
 // Start opens connection to databases and external services, afterwards starting grpc and http server to serve requests.
 func (service *Service) Start(ctx context.Context, initFn func() error) {
-	handleErr(service.init(ctx))
-	handleErr(initFn())
-	handleErr(service.run(ctx))
+	service.init(ctx)
+	handleErrs(initFn(), service.run(ctx))
 }
 
+// starts the servers
 func (service *Service) run(ctx context.Context) error {
-	defer func() {
-		var err error
-		for _, shutdown := range service.shutdowns {
-			err = shutdown()
-			if err != nil {
-				service.logger.Errorln(err)
-			}
-		}
-	}()
-
-	service.httpMux.Handle(service.runtimeMuxEndpoint, service.runtimeMux)
-
-	// Apply optional middlewares
-	if service.cfg.HttpOptions().CorsEnabled() {
-		service.httpMiddlewares = append(service.httpMiddlewares, http_middleware.SupportCORS)
-	}
-
-	handler := http_middleware.Apply(service.Handler(), service.httpMiddlewares...)
-
-	var ghandler http.Handler
-
-	if service.cfg.ServiceTLSEnabled() {
-		ghandler = grpcHandlerFunc(service.GRPCServer(), handler)
-	} else {
-		ghandler = handler
-	}
-
-	httpServer := &http.Server{
-		Addr:         fmt.Sprintf(":%d", service.cfg.ServicePort()),
-		Handler:      ghandler,
-		ReadTimeout:  time.Duration(service.httpServerReadTimeout) * time.Second,
-		WriteTimeout: time.Duration(service.httpServerWriteTimeout) * time.Second,
-	}
-
-	// Graceful shutdown of server
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt)
-	go func() {
-		for range c {
-			service.logger.Warning("shutting down service ...")
-			service.gRPCServer.Stop()
-			log.Fatalln(httpServer.Shutdown(ctx))
-
-			<-ctx.Done()
-		}
-	}()
-
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", service.cfg.ServicePort()))
-	if err != nil {
-		return errors.Wrap(err, "failed to create TCP listener for http server")
-	}
-	defer lis.Close()
-
-	logMsgFn := func() {
-		if !service.cfg.ServiceTLSEnabled() {
-			service.logger.Infof(
-				"<GRPC> running on port %d (insecure), <REST> server running on port %d (insecure)",
-				service.cfg.GRPCPort(), service.cfg.ServicePort(),
-			)
-		} else {
-			service.logger.Infof(
-				"<gRPC> and <REST> server running on same port %d (secure)",
-				service.cfg.ServicePort(),
-			)
-		}
-	}
-
-	logMsgFn()
-
-	if !service.cfg.ServiceTLSEnabled() {
-		glis, err := net.Listen("tcp", fmt.Sprintf(":%d", service.cfg.GRPCPort()))
-		if err != nil {
-			return errors.Wrap(err, "failed to create TCP listener for gRPC server")
-		}
-		defer glis.Close()
-
-		// Note: The call to serve grpc must be inside a goroutine; don't do [go service.gRPCServer.Serve(glis)]
-		go func() {
-			err := service.gRPCServer.Serve(glis)
-			if err != nil {
-				service.logger.Errorln(err)
+	fn := func() error {
+		defer func() {
+			var err error
+			for _, shutdown := range service.shutdowns {
+				err = shutdown()
+				if err != nil {
+					service.logger.Errorln(err)
+				}
 			}
 		}()
 
-		// Serve http insecurely
-		return httpServer.Serve(lis)
+		// Apply optional middlewares
+		if service.cfg.HttpOptions().CorsEnabled() {
+			service.httpMiddlewares = append(service.httpMiddlewares, http_middleware.SupportCORS)
+		}
+
+		// Handles grpc gateway apis
+		service.AddEndpoint(service.runtimeMuxEndpoint, service.runtimeMux)
+
+		// Apply any middlewares to the handler
+		handler := http_middleware.Apply(service.Handler(), service.httpMiddlewares...)
+
+		var ghandler http.Handler
+
+		// add grpc handler if TLS is enabled on service, will use same port
+		if service.cfg.ServiceTLSEnabled() {
+			ghandler = grpcHandlerFunc(service.GRPCServer(), handler)
+		} else {
+			ghandler = handler
+		}
+
+		httpServer := &http.Server{
+			Addr:         fmt.Sprintf(":%d", service.cfg.ServicePort()),
+			Handler:      ghandler,
+			ReadTimeout:  time.Duration(service.httpServerReadTimeout) * time.Second,
+			WriteTimeout: time.Duration(service.httpServerWriteTimeout) * time.Second,
+		}
+
+		// Graceful shutdown of server
+		c := make(chan os.Signal, 1)
+		signal.Notify(c, os.Interrupt)
+		go func() {
+			for range c {
+				service.logger.Warning("shutting down service ...")
+				service.gRPCServer.Stop()
+				log.Fatalln(httpServer.Shutdown(ctx))
+
+				<-ctx.Done()
+			}
+		}()
+
+		lis, err := net.Listen("tcp", fmt.Sprintf(":%d", service.cfg.ServicePort()))
+		if err != nil {
+			return errors.Wrap(err, "failed to create TCP listener for http server")
+		}
+		defer lis.Close()
+
+		logMsgFn := func() {
+			if !service.cfg.ServiceTLSEnabled() {
+				service.logger.Infof(
+					"<GRPC> running on port %d (insecure), <REST> server running on port %d (insecure)",
+					service.cfg.GRPCPort(), service.cfg.ServicePort(),
+				)
+			} else {
+				service.logger.Infof(
+					"<gRPC> and <REST> server running on same port %d (secure)",
+					service.cfg.ServicePort(),
+				)
+			}
+		}
+
+		logMsgFn()
+
+		if !service.cfg.ServiceTLSEnabled() {
+			glis, err := net.Listen("tcp", fmt.Sprintf(":%d", service.cfg.GRPCPort()))
+			if err != nil {
+				return errors.Wrap(err, "failed to create TCP listener for gRPC server")
+			}
+			defer glis.Close()
+
+			// Note: The call to serve grpc must be inside a goroutine; don't do [go service.gRPCServer.Serve(glis)]
+			go func() {
+				err := service.gRPCServer.Serve(glis)
+				if err != nil {
+					service.logger.Errorln(err)
+				}
+			}()
+
+			// Serve http insecurely
+			return httpServer.Serve(lis)
+		}
+
+		cert, certPool, err := tlsutil.GetCert(service.Config().ServiceTLSCertFile(), service.Config().ServiceTLSKeyFile())
+		if err != nil {
+			return err
+		}
+
+		tlsConfig := &tls.Config{
+			NextProtos:         []string{"h2", "http/1.1", "http/1.2"},
+			MinVersion:         tls.VersionTLS10,
+			MaxVersion:         tls.VersionTLS13,
+			ClientAuth:         tls.VerifyClientCertIfGiven,
+			ClientCAs:          certPool,
+			Certificates:       []tls.Certificate{*cert},
+			InsecureSkipVerify: true,
+		}
+
+		// Serve tls
+		return httpServer.Serve(tls.NewListener(lis, tlsConfig))
 	}
 
-	cert, certPool, err := tlsutil.GetCert(service.Config().ServiceTLSCertFile(), service.Config().ServiceTLSKeyFile())
-	if err != nil {
-		return err
-	}
+	var err error
+	service.runOnceFn.Do(func() {
+		err = fn()
+	})
 
-	tlsConfig := &tls.Config{
-		NextProtos:         []string{"h2", "http/1.1", "http/1.2"},
-		MinVersion:         tls.VersionTLS10,
-		MaxVersion:         tls.VersionTLS13,
-		ClientAuth:         tls.VerifyClientCertIfGiven,
-		ClientCAs:          certPool,
-		Certificates:       []tls.Certificate{*cert},
-		InsecureSkipVerify: true,
-	}
-
-	// Serve tls
-	return httpServer.Serve(tls.NewListener(lis, tlsConfig))
+	return err
 }
 
 // grpcHandlerFunc returns an http.Handler that delegates to grpcServer on incoming gRPC
@@ -178,7 +194,7 @@ func grpcHandlerFunc(grpcServer *grpc.Server, otherHandler http.Handler) http.Ha
 // The method must be called before registering anything on the gRPC server or passing options to the gRPC client.
 // When this method has been called, subsequent calls to update interceptors becomes stale.
 func (service *Service) initGRPC(ctx context.Context) error {
-	// ============================= Initialize runtime mux =============================
+	// ============================= Update runtime mux endpoint =============================
 	if service.runtimeMuxEndpoint == "" {
 		service.runtimeMuxEndpoint = "/"
 	}
