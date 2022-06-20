@@ -57,7 +57,7 @@ type Service struct {
 }
 
 // NewService create a micro-service utility store by parsing data from config. Pass nil logger to use default logger
-func NewService(ctx context.Context, cfg *config.Config, grpcLogger grpclog.LoggerV2) (*Service, error) {
+func NewService(_ context.Context, cfg *config.Config, grpcLogger grpclog.LoggerV2) (*Service, error) {
 	if cfg == nil {
 		return nil, errors.New("nil config not allowed")
 	}
