@@ -160,7 +160,12 @@ func (service *Service) openExternalConnections(ctx context.Context) error {
 
 		name := strings.ToLower(srv.Name())
 
-		externalServices[name], err = service.DialExternalService(ctx, name)
+		dopts := service.extServiceDialOptions[srv.Name()]
+		if len(dopts) == 0 {
+			dopts = make([]grpc.DialOption, 0)
+		}
+
+		externalServices[name], err = service.DialExternalService(ctx, name, dopts...)
 		if err != nil {
 			return err
 		}

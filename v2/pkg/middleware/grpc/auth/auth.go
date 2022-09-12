@@ -78,7 +78,7 @@ func NewAPI(opt *Options) (API, error) {
 	// Validation
 	switch {
 	case opt.SigningKey == nil:
-		return nil, errs.NilObject("jwt signing key")
+		return nil, errs.MissingField("jwt signing key")
 	case opt.Issuer == "":
 		return nil, errs.MissingField("jwt issuer")
 	case opt.Audience == "":

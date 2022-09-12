@@ -37,11 +37,6 @@ func DuplicateField(fieldName, fieldValue string) error {
 	return status.Errorf(codes.AlreadyExists, "%s with value %s exists", fieldName, fieldValue)
 }
 
-// NilObject is error resulting from using nil references to objects
-func NilObject(object string) error {
-	return status.Errorf(codes.InvalidArgument, "nil object not allowed: %s", object)
-}
-
 // ConvertingType wraps error that occured during type assertion to grpc status error
 func ConvertingType(err error, from, to string) error {
 	return status.Errorf(codes.Internal, "couldn't convert from %s to %s: %v", from, to, err)
@@ -62,11 +57,6 @@ func ReadFailed(err error) error {
 	return status.Errorf(codes.Internal, "read operation failed: %v", err)
 }
 
-// SQLQueryFailed wraps a sql query error to a status error
-func SQLQueryFailed(err error, queryType string) error {
-	return status.Errorf(codes.Internal, "failed to execute %s query: %v", queryType, err)
-}
-
 // DoesNotExist returns status error indicating that the resource does not exist
 func DoesNotExist(resource, id string) error {
 	return status.Errorf(codes.NotFound, "%s with id %s does not exist", resource, id)
@@ -75,46 +65,6 @@ func DoesNotExist(resource, id string) error {
 // DoesExist returns status error indicating the resource does exist
 func DoesExist(resource, id string) error {
 	return status.Errorf(codes.AlreadyExists, "%s with id %s already exists", resource, id)
-}
-
-// FailedToSave is status error returned from failed save operation
-func FailedToSave(resource string, err error) error {
-	return status.Errorf(codes.Internal, "failed to save %s: %v", resource, err)
-}
-
-// FailedToUpdate wraps error returned from failed update operation to a status error
-func FailedToUpdate(resource string, err error) error {
-	return status.Errorf(codes.Internal, "failed to update %s: %v", resource, err)
-}
-
-// FailedToDelete wraps error returned from failed delete operation to a status error
-func FailedToDelete(resource string, err error) error {
-	return status.Errorf(codes.Internal, "failed to delete %s: %v", resource, err)
-}
-
-// FailedToFind wraps error returned from failed find operation to a status error
-func FailedToFind(resource string, err error) error {
-	return status.Errorf(codes.Internal, "failed to find %s: %v", resource, err)
-}
-
-// FailedToBeginTx wraps error returned from failed transaction to a status error
-func FailedToBeginTx(err error) error {
-	return status.Errorf(codes.Internal, "failed to begin db transaction: %v", err)
-}
-
-// FailedToCommitTx wraps error returned from failed commit of transaction to a status error
-func FailedToCommitTx(err error) error {
-	return status.Errorf(codes.Internal, "failed to commit transaction: %v", err)
-}
-
-// FailedToRollbackTx wraps error returned from failed rollback of transaction to a status error
-func FailedToRollbackTx(err error) error {
-	return status.Errorf(codes.Internal, "failed to rollback transaction: %v", err)
-}
-
-// TokenCredentialNotMatching creates a status error caused by mismatch in token credential
-func TokenCredentialNotMatching(cred string) error {
-	return status.Errorf(codes.PermissionDenied, "token credential %v do not match", cred)
 }
 
 // FailedToEncrypt is status error from failed encryption operation
@@ -127,19 +77,9 @@ func FailedToDecrypt(err error) error {
 	return status.Errorf(codes.Internal, "failed to decrypt data: %v", err)
 }
 
-// RedisCmdFailed wraps error returned from a failed redis command to a status error
-func RedisCmdFailed(err error, command string) error {
-	return status.Errorf(codes.Internal, "failed to execute %s command: %v", command, err)
-}
-
 // FailedToExecuteTemplate returns a status error for a failed template execution
 func FailedToExecuteTemplate(err error) error {
 	return status.Errorf(codes.Internal, "failed to execute template: %v", err)
-}
-
-// FailedToGetToken wraps the error returned while getting token to a status error
-func FailedToGetToken(err error) error {
-	return status.Errorf(codes.Internal, "failed to get token: %v", err)
 }
 
 // WrapErrorWithCode is a wraps generic error to a status error with provided code

@@ -15,6 +15,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/grpclog"
 	"gorm.io/gorm"
 
@@ -46,6 +47,7 @@ type Service struct {
 	unaryInterceptors        []grpc.UnaryServerInterceptor
 	streamInterceptors       []grpc.StreamServerInterceptor
 	dialOptions              []grpc.DialOption
+	extServiceDialOptions    map[string][]grpc.DialOption
 	unaryClientInterceptors  []grpc.UnaryClientInterceptor
 	streamClientInterceptors []grpc.StreamClientInterceptor
 	shutdowns                []func() error
@@ -83,18 +85,24 @@ func NewService(_ context.Context, cfg *config.Config, grpcLogger grpclog.Logger
 		redisClients:             make(map[string]*redis.Client),
 		rediSearchClients:        make(map[string]*redisearch.Client),
 		redisOptions:             make(map[string]*redis.Options),
+		runtimeMuxEndpoint:       "",
 		httpMiddlewares:          make([]http_middleware.Middleware, 0),
 		httpMux:                  http.NewServeMux(),
 		runtimeMux:               runtime.NewServeMux(),
+		clientConn:               &grpc.ClientConn{},
+		gRPCServer:               &grpc.Server{},
 		externalServicesConn:     map[string]*grpc.ClientConn{},
 		serveMuxOptions:          make([]runtime.ServeMuxOption, 0),
 		serverOptions:            make([]grpc.ServerOption, 0),
 		unaryInterceptors:        make([]grpc.UnaryServerInterceptor, 0),
 		streamInterceptors:       make([]grpc.StreamServerInterceptor, 0),
 		dialOptions:              make([]grpc.DialOption, 0),
+		extServiceDialOptions:    map[string][]grpc.DialOption{},
 		unaryClientInterceptors:  make([]grpc.UnaryClientInterceptor, 0),
 		streamClientInterceptors: make([]grpc.StreamClientInterceptor, 0),
 		shutdowns:                make([]func() error, 0),
+		httpServerReadTimeout:    0,
+		httpServerWriteTimeout:   0,
 		initOnceFn:               &sync.Once{},
 		runOnceFn:                &sync.Once{},
 	}
@@ -137,6 +145,11 @@ func (service *Service) AddEndpointFunc(pattern string, handleFunc http.HandlerF
 // AddHTTPMiddlewares adds http middlewares to the service
 func (service *Service) AddHTTPMiddlewares(middlewares ...http_middleware.Middleware) {
 	service.httpMiddlewares = append(service.httpMiddlewares, middlewares...)
+}
+
+// AddExtServiceDialOptions add dials options to an external service service
+func (service *Service) AddExtServiceDialOptions(externalService string, dialOptions ...grpc.DialOption) {
+	service.extServiceDialOptions[strings.ToLower(externalService)] = append(service.extServiceDialOptions[strings.ToLower(externalService)], dialOptions...)
 }
 
 // AddGRPCDialOptions adds dial options to the service gRPC reverse proxy client
@@ -300,15 +313,22 @@ func (service *Service) DialExternalService(
 		}
 		dopts = append(dopts, grpc.WithTransportCredentials(creds))
 	} else {
-		dopts = append(dopts, grpc.WithInsecure())
+		dopts = append(dopts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	}
 
-	return conn.DialService(ctx, &conn.GRPCDialOptions{
+	cc, err := conn.DialService(ctx, &conn.GRPCDialOptions{
 		ServiceName: serviceInfo.Name(),
 		Address:     serviceInfo.Address(),
 		K8Service:   serviceInfo.K8Service(),
 		DialOptions: dopts,
 	})
+	if err != nil {
+		return nil, err
+	}
+
+	service.externalServicesConn[serviceInfo.Name()] = cc
+
+	return cc, nil
 }
 
 // ExternalServiceConn returns the underlying rRPC connection to the external service found in config "externalServices"

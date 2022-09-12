@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/gidyon/micro/v2/pkg/conn"
 	http_middleware "github.com/gidyon/micro/v2/pkg/middleware/http"
@@ -218,7 +219,7 @@ func (service *Service) initGRPC(ctx context.Context) error {
 		service.dialOptions = append(service.dialOptions, grpc.WithTransportCredentials(creds))
 		gPort = service.cfg.HTTPort()
 	} else {
-		service.dialOptions = append(service.dialOptions, grpc.WithInsecure())
+		service.dialOptions = append(service.dialOptions, grpc.WithTransportCredentials(insecure.NewCredentials()))
 		gPort = service.cfg.GRPCPort()
 	}
 
