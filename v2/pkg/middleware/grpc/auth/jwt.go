@@ -48,3 +48,17 @@ func (api *authAPI) genToken(ctx context.Context, payload *Payload, expires int6
 
 	return token.SignedString(api.SigningKey)
 }
+
+func (api *authAPI) genTokenV2(ctx context.Context, claims *Claims, expires int64, signingKey []byte) (tokenStr string, err error) {
+	defer func() {
+		if err2 := recover(); err2 != nil {
+			err = fmt.Errorf("%v", err2)
+		}
+	}()
+
+	token := jwt.NewWithClaims(api.SigningMethod, *claims)
+
+	token.Header["kid"] = claims.ProjectID
+
+	return token.SignedString(signingKey)
+}
