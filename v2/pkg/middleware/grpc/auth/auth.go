@@ -54,6 +54,7 @@ type API interface {
 	IsAdmin(group string) bool
 	GenToken(ctx context.Context, payload *Payload, expires time.Time) (string, error)
 	GenTokenUsingKey(ctx context.Context, claims *Claims, expires time.Time, signingKey []byte) (string, error)
+	GenTokenFromClaims(ctx context.Context, claims *Claims, expires time.Time) (string, error)
 	GetJwtPayload(ctx context.Context) (*Payload, error)
 	GetPayloadFromJwt(jwt string) (*Payload, error)
 	AuthorizeFunc(ctx context.Context) (context.Context, error)
@@ -268,6 +269,10 @@ func (api *authAPI) GenToken(ctx context.Context, payload *Payload, expirationTi
 
 func (api *authAPI) GenTokenUsingKey(ctx context.Context, claims *Claims, expirationTime time.Time, signingKey []byte) (string, error) {
 	return api.genTokenV2(ctx, claims, expirationTime.Unix(), signingKey)
+}
+
+func (api *authAPI) GenTokenFromClaims(ctx context.Context, claims *Claims, expirationTime time.Time) (string, error) {
+	return api.genTokenV2(ctx, claims, expirationTime.Unix(), api.SigningKey)
 }
 
 func (api *authAPI) GetJwtPayload(ctx context.Context) (*Payload, error) {
