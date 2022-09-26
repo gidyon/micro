@@ -57,6 +57,8 @@ type API interface {
 	GenTokenFromClaims(ctx context.Context, claims *Claims, expires time.Time) (string, error)
 	GetJwtPayload(ctx context.Context) (*Payload, error)
 	GetPayloadFromJwt(jwt string) (*Payload, error)
+	GetClaims(ctx context.Context) (*Claims, error)
+	GetClaimsFromJwt(jwt string) (*Claims, error)
 	AuthorizeFunc(ctx context.Context) (context.Context, error)
 }
 
@@ -276,12 +278,12 @@ func (api *authAPI) GenTokenFromClaims(ctx context.Context, claims *Claims, expi
 }
 
 func (api *authAPI) GetJwtPayload(ctx context.Context) (*Payload, error) {
-	tokenInfo, ok := ctx.Value(ctxKey).(*Claims)
+	claims, ok := ctx.Value(ctxKey).(*Claims)
 	if !ok {
 		return nil, errs.WrapMessage(codes.Unauthenticated, "no claims found in token")
 	}
 
-	return tokenInfo.Payload, nil
+	return claims.Payload, nil
 }
 
 func (api *authAPI) GetPayloadFromJwt(jwt string) (*Payload, error) {
@@ -292,6 +294,23 @@ func (api *authAPI) GetPayloadFromJwt(jwt string) (*Payload, error) {
 
 	return claims.Payload, nil
 }
+func (api *authAPI) GetClaims(ctx context.Context) (*Claims, error) {
+	claims, ok := ctx.Value(ctxKey).(*Claims)
+	if !ok {
+		return nil, errs.WrapMessage(codes.Unauthenticated, "no claims found in token")
+	}
+
+	return claims, nil
+}
+
+func (api *authAPI) GetClaimsFromJwt(jwt string) (*Claims, error) {
+	claims, err := api.ParseToken(jwt)
+	if err != nil {
+		return nil, err
+	}
+
+	return claims, nil
+}
 
 func (api *authAPI) AuthorizeFunc(ctx context.Context) (context.Context, error) {
 	token, err := grpc_auth.AuthFromMD(ctx, "bearer")
@@ -299,14 +318,14 @@ func (api *authAPI) AuthorizeFunc(ctx context.Context) (context.Context, error) 
 		return nil, err
 	}
 
-	tokenInfo, err := api.ParseToken(token)
+	claims, err := api.ParseToken(token)
 	if err != nil {
 		return nil, status.Errorf(codes.Unauthenticated, "invalid auth token: %v", err)
 	}
 
-	grpc_ctxtags.Extract(ctx).Set("auth.sub", userClaimFromToken(tokenInfo))
+	grpc_ctxtags.Extract(ctx).Set("auth.sub", userClaimFromToken(claims))
 
-	return context.WithValue(ctx, ctxKey, tokenInfo), nil
+	return context.WithValue(ctx, ctxKey, claims), nil
 }
 
 // ParseFromCtx jwt token from context
@@ -349,14 +368,14 @@ func (api *authAPI) ParseToken(tokenString string) (claims *Claims, err error) {
 	return claims, nil
 }
 
-func userClaimFromToken(tokenInfo *Claims) *Payload {
-	return tokenInfo.Payload
+func userClaimFromToken(claims *Claims) *Payload {
+	return claims.Payload
 }
 
-type tokenInfo string
+type claims string
 
 // ctxKey holds the context key containing the token information
-const ctxKey = tokenInfo("tokenInfo")
+const ctxKey = claims("claims")
 
 // AddMD adds metadata to token
 func (api *authAPI) AddMD(ctx context.Context, actorID, group string) context.Context {
