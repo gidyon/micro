@@ -56,6 +56,7 @@ type Service struct {
 	httpServerWriteTimeout int
 	initOnceFn             *sync.Once
 	runOnceFn              *sync.Once
+	nowFunc                func() time.Time
 }
 
 // NewService create a micro-service utility store by parsing data from config. Pass nil logger to use default logger
@@ -105,6 +106,9 @@ func NewService(_ context.Context, cfg *config.Config, grpcLogger grpclog.Logger
 		httpServerWriteTimeout:   0,
 		initOnceFn:               &sync.Once{},
 		runOnceFn:                &sync.Once{},
+		nowFunc: func() time.Time {
+			return time.Now().UTC()
+		},
 	}
 
 	return svc, nil
@@ -389,4 +393,9 @@ func (service *Service) SetHTTPServerReadTimout(sec int) {
 // SetHTTPServerWriteTimout sets the write timeout ftoor the service HTTP server
 func (service *Service) SetHTTPServerWriteTimout(sec int) {
 	service.httpServerWriteTimeout = sec
+}
+
+// SetNowFunc sets the function to be used when creating a new timestamp
+func (service *Service) SetNowFunc(f func() time.Time) {
+	service.nowFunc = f
 }

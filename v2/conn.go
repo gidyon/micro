@@ -70,7 +70,9 @@ func (service *Service) openSQLDBConnections(ctx context.Context) error {
 		case "postgres":
 			gormDB, err = gorm.Open(postgres.New(postgres.Config{
 				Conn: sqlDB,
-			}), &gorm.Config{})
+			}), &gorm.Config{
+				NowFunc: service.nowFunc,
+			})
 			if err != nil {
 				return err
 			}
@@ -78,7 +80,9 @@ func (service *Service) openSQLDBConnections(ctx context.Context) error {
 			// mysql connection
 			gormDB, err = gorm.Open(mysql.New(mysql.Config{
 				Conn: sqlDB,
-			}), &gorm.Config{})
+			}), &gorm.Config{
+				NowFunc: service.nowFunc,
+			})
 			if err != nil {
 				return err
 			}
