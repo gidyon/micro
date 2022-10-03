@@ -59,6 +59,8 @@ type API interface {
 	GetPayloadFromJwt(jwt string) (*Payload, error)
 	GetClaims(ctx context.Context) (*Claims, error)
 	GetClaimsFromJwt(jwt string) (*Claims, error)
+	GetMetadataFromJwt(jwt string) (metadata.MD, error)
+	GetMetadataFromCtx(ctx context.Context) (metadata.MD, error)
 	AuthorizeFunc(ctx context.Context) (context.Context, error)
 }
 
@@ -310,6 +312,18 @@ func (api *authAPI) GetClaimsFromJwt(jwt string) (*Claims, error) {
 	}
 
 	return claims, nil
+}
+
+func (api *authAPI) GetMetadataFromJwt(jwt string) (metadata.MD, error) {
+	return metadata.Pairs(Header(), fmt.Sprintf("%s %s", Scheme(), jwt)), nil
+}
+
+func (api *authAPI) GetMetadataFromCtx(ctx context.Context) (metadata.MD, error) {
+	token, err := grpc_auth.AuthFromMD(ctx, "bearer")
+	if err != nil {
+		return nil, err
+	}
+	return metadata.Pairs(Header(), fmt.Sprintf("%s %s", Scheme(), token)), nil
 }
 
 func (api *authAPI) AuthorizeFunc(ctx context.Context) (context.Context, error) {
