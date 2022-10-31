@@ -7,6 +7,8 @@ import (
 
 	auth "github.com/gidyon/micro/v2/pkg/middleware/grpc/auth"
 
+	metadata "google.golang.org/grpc/metadata"
+
 	mock "github.com/stretchr/testify/mock"
 
 	time "time"
@@ -314,6 +316,94 @@ func (_m *AuthAPIMock) GenToken(ctx context.Context, payload *auth.Payload, expi
 	return r0, r1
 }
 
+// GenTokenFromClaims provides a mock function with given fields: ctx, claims, expires
+func (_m *AuthAPIMock) GenTokenFromClaims(ctx context.Context, claims *auth.Claims, expires time.Time) (string, error) {
+	ret := _m.Called(ctx, claims, expires)
+
+	var r0 string
+	if rf, ok := ret.Get(0).(func(context.Context, *auth.Claims, time.Time) string); ok {
+		r0 = rf(ctx, claims, expires)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, *auth.Claims, time.Time) error); ok {
+		r1 = rf(ctx, claims, expires)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GenTokenUsingKey provides a mock function with given fields: ctx, claims, expires, signingKey
+func (_m *AuthAPIMock) GenTokenUsingKey(ctx context.Context, claims *auth.Claims, expires time.Time, signingKey []byte) (string, error) {
+	ret := _m.Called(ctx, claims, expires, signingKey)
+
+	var r0 string
+	if rf, ok := ret.Get(0).(func(context.Context, *auth.Claims, time.Time, []byte) string); ok {
+		r0 = rf(ctx, claims, expires, signingKey)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, *auth.Claims, time.Time, []byte) error); ok {
+		r1 = rf(ctx, claims, expires, signingKey)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetClaims provides a mock function with given fields: ctx
+func (_m *AuthAPIMock) GetClaims(ctx context.Context) (*auth.Claims, error) {
+	ret := _m.Called(ctx)
+
+	var r0 *auth.Claims
+	if rf, ok := ret.Get(0).(func(context.Context) *auth.Claims); ok {
+		r0 = rf(ctx)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*auth.Claims)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = rf(ctx)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetClaimsFromJwt provides a mock function with given fields: jwt
+func (_m *AuthAPIMock) GetClaimsFromJwt(jwt string) (*auth.Claims, error) {
+	ret := _m.Called(jwt)
+
+	var r0 *auth.Claims
+	if rf, ok := ret.Get(0).(func(string) *auth.Claims); ok {
+		r0 = rf(jwt)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*auth.Claims)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(jwt)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetJwtPayload provides a mock function with given fields: ctx
 func (_m *AuthAPIMock) GetJwtPayload(ctx context.Context) (*auth.Payload, error) {
 	ret := _m.Called(ctx)
@@ -330,6 +420,52 @@ func (_m *AuthAPIMock) GetJwtPayload(ctx context.Context) (*auth.Payload, error)
 	var r1 error
 	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
 		r1 = rf(ctx)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetMetadataFromCtx provides a mock function with given fields: ctx
+func (_m *AuthAPIMock) GetMetadataFromCtx(ctx context.Context) (metadata.MD, error) {
+	ret := _m.Called(ctx)
+
+	var r0 metadata.MD
+	if rf, ok := ret.Get(0).(func(context.Context) metadata.MD); ok {
+		r0 = rf(ctx)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(metadata.MD)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = rf(ctx)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetMetadataFromJwt provides a mock function with given fields: jwt
+func (_m *AuthAPIMock) GetMetadataFromJwt(jwt string) (metadata.MD, error) {
+	ret := _m.Called(jwt)
+
+	var r0 metadata.MD
+	if rf, ok := ret.Get(0).(func(string) metadata.MD); ok {
+		r0 = rf(jwt)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(metadata.MD)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(jwt)
 	} else {
 		r1 = ret.Error(1)
 	}
